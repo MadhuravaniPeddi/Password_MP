@@ -1,0 +1,16 @@
+smtp_server: "centroid-com.mail.protection.outlook.com"
+smtp_port: "25"
+email_recipients:
+  - madhuravani.peddi@centroid.com
+email_sender: awx@cenautomaster.ad.centroid.com
+secret_id: "{{ secret_id }}"
+secret_server_base_url: "https://centroid.secretservercloud.com"
+secret_server_username: "{{ secret_server_user }}"
+secret_server_password: "{{ secret_server_pass }}"
+secret_server_domain: "ad"
+#zip_pass: "{{ ZIP_PASS }}"
+special_characters: "@$#*"
+password_length: 12
+random_password_file: "/tmp/random_password.txt"
+zip_file: "/tmp/password_protected.zip"
+password_reset_results: []
