@@ -5,7 +5,7 @@
   run_once: true
   delegate_to: localhost
   
-- name: Send an email with the password reset results and password-protected zip file
+- name: Send an email with the password reset results 
   community.general.mail:
     host: "{{ smtp_server }}"
     port: "{{ smtp_port }}"
