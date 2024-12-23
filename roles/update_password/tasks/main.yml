@@ -22,6 +22,7 @@
       grant_type: "password"
     body_format: form-urlencoded
   register: token_response
+  no_log: True
 
 - name: Update password
   uri:
@@ -44,3 +45,4 @@
       comment: "{{ comment }}"
     timeout: 30
   register: update_response
+  no_log: True
