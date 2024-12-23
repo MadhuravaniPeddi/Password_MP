@@ -5,6 +5,9 @@
   
   vars_files:
     - vars/variables.yaml
+  
+  vars:
+   final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
 
   roles:
     - role: password_from_secret_server

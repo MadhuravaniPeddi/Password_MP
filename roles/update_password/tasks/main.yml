@@ -40,7 +40,7 @@
       items:
         - fieldId: "{{ field_id }}"
           itemId: "{{ item_id }}"
-          itemValue: "{{ item_value }}"
+          itemValue: "{{ final_password }}"
       active: true
       comment: "{{ comment }}"
     timeout: 30
