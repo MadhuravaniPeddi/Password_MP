@@ -22,14 +22,14 @@
       grant_type: "password"
     body_format: form-urlencoded
   register: token_response
-#  no_log: True
+  no_log: True
 
 - name: Update password
   uri:
     url: "{{ api_url }}"
     method: PUT
     headers:
-      Authorization: "Bearer {{ token_response.token }}"
+      Authorization: "Bearer {{ token_response.json.access_token }}"
       Content-Type: "application/json"
     body_format: json
     body:
