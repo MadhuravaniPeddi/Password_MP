@@ -23,7 +23,7 @@
       grant_type: "password"
     body_format: form-urlencoded
   register: token_response
-  no_log: True
+#  no_log: True
 
 - name: Update password
   uri:
