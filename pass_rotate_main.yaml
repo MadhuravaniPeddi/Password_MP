@@ -1,18 +1,28 @@
----
 - name: Fetch a password from Secret Server, reset password on target hosts, and send email
   hosts: all
   gather_facts: false
   
   vars_files:
     - vars/variables.yaml
-
+  
+  pre_tasks:
+    - name: Generate a random password
+      set_fact:
+        final_password: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
+      no_log: true
+  
   roles:
     - role: password_from_secret_server
       delegate_to: localhost  
       run_once: true
 
     - role: password_reset
+      no_log: true
+
+    - role: update_password
+      delegate_to: localhost  
+      run_once: true
 
     - role: email_notification
       delegate_to: localhost  
-      run_once: true  
+      run_once: true
