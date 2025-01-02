@@ -7,8 +7,8 @@
     item_id: 250075 
 #    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
     comment: "made changes"
-    folderId: 1606
-    secret_name: "EXP"
+    folderId: 231
+    secret_name: "SREE"
 
 
 - name: Request OAuth token
