@@ -43,11 +43,17 @@
   debug:
     msg: "{{ existing_secret.json['items'] }}"
 
+
+- name: Debug password item
+  debug:
+    msg: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) }}"
+
 - name: Set siteId, fieldId, itemId for password
   set_fact:
     siteId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).siteId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
     fieldId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
     itemId: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId if (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) is not none else '' }}"
+
 
 
 
