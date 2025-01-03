@@ -23,7 +23,7 @@
 
       Use the secret server link below to get the password to extract it.
 
-      URL: https://centroid.secretservercloud.com/app/#/secrets/18613/general
+      URL: https://centroid.secretservercloud.com/app/#/secrets/{{ secret_id }}/general
 
       Thanks & Regards,
       Automation Team
