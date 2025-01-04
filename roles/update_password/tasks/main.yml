@@ -51,6 +51,7 @@
 - name: Set siteId, fieldId, itemId for password
   set_fact:
     site_id: "{{ (existing_secret.json['siteId']) }}"
+    folder_id: "{{ (existing_secret.json['folderId']) }}"
     field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
     item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
 
@@ -70,7 +71,7 @@
       - "API URL: {{ api_url }}"
       - "Site ID: {{ site_id }}"
       - "Field ID: {{ field_id }}"
-      - "Folder ID: {{ folder_Id }}"
+      - "Folder ID: {{ folder_id }}"
       - "Secret Name: {{ secret_name }}"
       - "Final Password: {{ final_password }}"
       - "Item ID: {{ item_id }}"
@@ -89,7 +90,7 @@
       # id: "{{ secret_id }}"
       name: "{{ secret_name }}"
       siteId: "{{ site_id }}"
-      folderId: "{{ folderId }}"
+      folderId: "{{ folder_id }}"
       items:
         - fieldId: "{{ field_id }}"
           itemId: "{{ item_id }}"
