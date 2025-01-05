@@ -23,9 +23,8 @@
       grant_type: "password"
     body_format: form-urlencoded
     timeout: 60
-    validate_certs: false
   register: token_response
-  # no_log: True
+  no_log: false
 
 
 - name: Retrieve existing secret
