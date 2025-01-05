@@ -10,7 +10,7 @@
 
   tasks:
     - name: Process each user
-      include_tasks: user_password_rotate.yaml
+      include_tasks: tasks/user_password_rotate.yaml
       with_items: "{{ users }}"
       loop_control:
         loop_var: user_details
