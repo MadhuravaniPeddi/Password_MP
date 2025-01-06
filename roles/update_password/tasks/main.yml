@@ -6,7 +6,7 @@
     # field_id: 40                 
     # item_id: 253722 
 #    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
-    comment: "Updated password for {{ user_details.secret_name }}"
+    comment: "Updating password for {{ user_details.secret_name }}"
     # folder_Id: 1129
     # secret_name: "SREE"
 
