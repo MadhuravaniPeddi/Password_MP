@@ -6,13 +6,34 @@
     - vars/variables.yaml
   
 
-
+- name: Restrict password rotation to root and service accounts
+  hosts: localhost
+  vars:
+    allowed_users:
+      - root
+      - oracle
+      - applmgr
+ 
   tasks:
-    - name: Process each user
-      include_tasks: tasks/user_password_rotate.yaml
-      with_items: "{{ users }}"
-      loop_control:
-        loop_var: user_details
+    - name: Filter allowed users
+      set_fact:
+        filtered_users: "{{ users | selectattr('username', 'in', allowed_users) | list }}"
+
+    - name: Debug filtered users
+      debug:
+        msg: "Filtered user: {{ item.username }}"
+      loop: "{{ filtered_users }}"
+
+
+
+
+
+  # tasks:
+  #   - name: Process each user
+  #     include_tasks: tasks/user_password_rotate.yaml
+  #     with_items: "{{ users }}"
+  #     loop_control:
+  #       loop_var: user_details
 
 
 
