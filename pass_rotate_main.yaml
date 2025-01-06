@@ -6,6 +6,9 @@
     - vars/variables.yaml
   
 
+
+
+
 - name: Restrict password rotation to root and service accounts
   hosts: localhost
   vars:
@@ -15,6 +18,13 @@
       - applmgr
  
   tasks:
+
+    - name: List all users received from variables
+      debug:
+        msg: "Received user: {{ item.username }}"
+      loop: "{{ users }}"
+
+
     - name: Filter allowed users
       set_fact:
         filtered_users: "{{ users | selectattr('username', 'in', allowed_users) | list }}"
