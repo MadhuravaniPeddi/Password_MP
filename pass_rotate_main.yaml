@@ -33,9 +33,9 @@
   #   - role: password_reset
   #     # no_log: true
 
-  #   - role: update_password
-  #     delegate_to: localhost  
-  #     run_once: true
+    # - role: update_password
+    #   delegate_to: localhost  
+    #   run_once: true
 
   #   - role: email_notification
   #     delegate_to: localhost  
