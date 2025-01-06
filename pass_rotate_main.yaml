@@ -37,21 +37,6 @@
 
 
 
-
-
-
-
-  # tasks:
-  #   - name: Process each user
-  #     include_tasks: tasks/user_password_rotate.yaml
-  #     with_items: "{{ users }}"
-  #     loop_control:
-  #       loop_var: user_details
-
-
-
-
-
   # pre_tasks:
   #   - name: Generate a random password
   #     set_fact:
