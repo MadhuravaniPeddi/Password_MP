@@ -2,22 +2,12 @@
 - name: Set variables
   set_fact:
     api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ user_details.secret_id }}" 
-    # site_id: 1               
-    # field_id: 40                 
-    # item_id: 253722 
-#    item_value: "{{ lookup('password', '/dev/null', length=16, special_chars='@$#*') }}"
     comment: "Updating password for {{ user_details.secret_name }}"
-    # folder_Id: 1129
-    # secret_name: "SREE"
-
-
 
 - name: Display final password
   debug:
     msg:
       - "Final Password: {{ final_password }}"
-
-
 
 - name: Request OAuth token
   uri:
@@ -30,7 +20,6 @@
       password: "{{ secret_server_password }}"
       grant_type: "password"
     body_format: form-urlencoded
-    # timeout: 60
   register: token_response
   delegate_to: localhost
   no_log: false

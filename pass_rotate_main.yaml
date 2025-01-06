@@ -7,13 +7,25 @@
   
 
 
+- name: Get list of all users from /etc/passwd
+  shell: cat /etc/passwd | awk -F: '{print $1}'
+  register: all_users
 
-  tasks:
-    - name: Process each user
-      include_tasks: tasks/user_password_rotate.yaml
-      with_items: "{{ users }}"
-      loop_control:
-        loop_var: user_details
+- name: Debug user list
+  debug:
+    msg: "{{ all_users.stdout_lines }}"
+
+
+
+
+
+
+  # tasks:
+  #   - name: Process each user
+  #     include_tasks: tasks/user_password_rotate.yaml
+  #     with_items: "{{ users }}"
+  #     loop_control:
+  #       loop_var: user_details
 
 
 
