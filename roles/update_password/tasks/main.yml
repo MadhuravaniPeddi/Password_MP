@@ -93,4 +93,5 @@
       comment: "{{ comment }}"
     timeout: 30
   register: update_response
+  delegate_to: localhost
   # no_log: True
