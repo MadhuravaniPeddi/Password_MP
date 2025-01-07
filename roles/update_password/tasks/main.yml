@@ -1,8 +1,9 @@
 
 - name: Set variables
   set_fact:
-    api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ user_details.secret_id }}" 
-    comment: "Updating password for secret id {{ user_details.secret_id }}"
+    # api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ user_details.secret_id }}" 
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?name={{ user_details.secret_name }}"
+    comment: "Updating password for secret id {{ user_details.secret_name }}"
 
 - name: Display final password
   debug:
@@ -47,7 +48,8 @@
     field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
     item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
     secret_name: "{{ existing_secret.json['name'] }}"
-    comment: "Updating password for secret id {{ secret_name }}"
+    secret_id: "{{ existing_secret.json['id'] }}"
+    comment: "Updating password for secret :   {{ secret_name }}"
 
 
 - name: Display the values after setting facts
@@ -58,6 +60,7 @@
       - "Field ID: {{ field_id }}"
       - "Folder ID: {{ folder_id }}"
       - "Secret Name: {{ secret_name }}"
+      - "Secret id: {{ secret_id }}"
       - "Final Password: {{ final_password }}"
       - "Item ID: {{ item_id }}"
       - "Comment: {{ comment }}"
@@ -72,7 +75,7 @@
       Content-Type: "application/json"
     body_format: json
     body:
-      id: "{{ user_details.secret_id }}"
+      id: "{{ secret_id }}"
       name: "{{ secret_name }}"
       siteId: "{{ site_id }}"
       folderId: "{{ folder_id }}"
