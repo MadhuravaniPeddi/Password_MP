@@ -4,7 +4,7 @@
     # api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ user_details.secret_id }}" 
     # /api/v1/secrets?filter.searchField=name&filter.searchText=<search name>
     # api_url: "{{ secret_server_base_url }}/api/v1/secrets?name={{ user_details.secret_name }}"
-    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}""
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
     comment: "Updating password for secret id {{ user_details.secret_name }}"
 
 - name: Display final password
