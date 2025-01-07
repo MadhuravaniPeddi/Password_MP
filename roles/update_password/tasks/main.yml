@@ -1,16 +1,13 @@
 
 - name: Set variables
   set_fact:
-    # api_url: "{{ secret_server_base_url }}/api/v1/secrets/{{ user_details.secret_id }}" 
-    # /api/v1/secrets?filter.searchField=name&filter.searchText=<search name>
-    # api_url: "{{ secret_server_base_url }}/api/v1/secrets?name={{ user_details.secret_name }}"
     api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
-    comment: "Updating password for secret id {{ user_details.secret_name }}"
 
-- name: Display final password
-  debug:
-    msg:
-      - "Final Password: {{ final_password }}"
+
+# - name: Display final password
+#   debug:
+#     msg:
+#       - "Final Password: {{ final_password }}"
 
 - name: Request OAuth token
   uri:
@@ -38,7 +35,7 @@
   register: secrets_found
   delegate_to: localhost
 
-- name: Find the first ID for the specified secret_name
+- name: Find the ID for the specified secret_name
   set_fact:
 
     first_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
@@ -63,9 +60,9 @@
   delegate_to: localhost
 
 
-- name: Debug password item
-  debug:
-    msg: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) }}"
+# - name: Debug password item
+#   debug:
+#     msg: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) }}"
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
@@ -78,18 +75,18 @@
     comment: "Updating password for secret :   {{ secret_name }}"
 
 
-- name: Display the values after setting facts
-  debug:
-    msg:
-      - "API URL: {{ api_url2 }}"
-      - "Site ID: {{ site_id }}"
-      - "Field ID: {{ field_id }}"
-      - "Folder ID: {{ folder_id }}"
-      - "Secret Name: {{ secret_name }}"
-      - "Secret id: {{ secret_id }}"
-      - "Final Password: {{ final_password }}"
-      - "Item ID: {{ item_id }}"
-      - "Comment: {{ comment }}"
+# - name: Display the values after setting facts
+#   debug:
+#     msg:
+#       - "API URL: {{ api_url2 }}"
+#       - "Site ID: {{ site_id }}"
+#       - "Field ID: {{ field_id }}"
+#       - "Folder ID: {{ folder_id }}"
+#       - "Secret Name: {{ secret_name }}"
+#       - "Secret id: {{ secret_id }}"
+#       - "Final Password: {{ final_password }}"
+#       - "Item ID: {{ item_id }}"
+#       - "Comment: {{ comment }}"
 
 
 - name: Update password
