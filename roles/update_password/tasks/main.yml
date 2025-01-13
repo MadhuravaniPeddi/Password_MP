@@ -4,11 +4,6 @@
     api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
 
 
-# - name: Display final password
-#   debug:
-#     msg:
-#       - "Final Password: {{ final_password }}"
-
 - name: Request OAuth token
   uri:
     url: "{{ secret_server_base_url }}/oauth2/token"
@@ -40,11 +35,6 @@
 
     first_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
 
-
-- name: Show the extracted first ID
-  debug:
-    var: first_secret_id
-
 - name: Set api_url to get the secret details from the id
   set_fact:
     api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ first_secret_id }}" 
@@ -59,11 +49,6 @@
   register: existing_secret
   delegate_to: localhost
 
-
-# - name: Debug password item
-#   debug:
-#     msg: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first) }}"
-
 - name: Set siteId, fieldId, itemId for password
   set_fact:
     site_id: "{{ (existing_secret.json['siteId']) }}"
@@ -73,20 +58,6 @@
     secret_name: "{{ existing_secret.json['name'] }}"
     secret_id: "{{ existing_secret.json['id'] }}"
     comment: "Updating password for secret :   {{ secret_name }}"
-
-
-# - name: Display the values after setting facts
-#   debug:
-#     msg:
-#       - "API URL: {{ api_url2 }}"
-#       - "Site ID: {{ site_id }}"
-#       - "Field ID: {{ field_id }}"
-#       - "Folder ID: {{ folder_id }}"
-#       - "Secret Name: {{ secret_name }}"
-#       - "Secret id: {{ secret_id }}"
-#       - "Final Password: {{ final_password }}"
-#       - "Item ID: {{ item_id }}"
-#       - "Comment: {{ comment }}"
 
 
 - name: Update password
@@ -111,4 +82,4 @@
     timeout: 30
   register: update_response
   delegate_to: localhost
-  # no_log: True
+  no_log: true
