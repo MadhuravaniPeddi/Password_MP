@@ -1,6 +1,6 @@
 smtp_server: "centroid-com.mail.protection.outlook.com"
 smtp_port: "25"
-email_recipients:
+default_email_recipients:
   - sreedhar.vajjilammagari@centroid.com
 email_sender: awx@cenautomaster.ad.centroid.com
 secret_id: "{{ secret_id }}"

@@ -10,15 +10,22 @@
         block:
           - name: Dynamically add username to users based on secret_name
             set_fact:
-              users_with_username: >-
+              users_with_defaults: >-
                 {{
                   users | map(
                     'combine',
                     {
-                      'username': item.secret_name.split('_')[-1] | lower
+                      'username': item.secret_name.split('_')[-1] | lower,
+                      'email_recipients': item.email_recipients | default(default_email_recipients)
                     }
                   ) | list
                 }}
+
+              
+
+
+
+
             loop: "{{ users }}"
             loop_control:
               loop_var: item
