@@ -6,7 +6,7 @@
     - vars/variables.yaml  
 
   tasks:
-      - name: Restrict password rotation to root and service accounts
+      - name: Restrict password rotation to root and service accounts (allowed_users)
         block:
           - name: Dynamically add username to users based on secret_name
             set_fact:
