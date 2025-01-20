@@ -32,10 +32,9 @@
 
 - name: Find the ID for the specified secret_name
   set_fact:
-
     found_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
 
-- name: Set api_url to get the secret details from the id
+- name: Set api_url to get the secret details from the secret_id
   set_fact:
     api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}" 
 
