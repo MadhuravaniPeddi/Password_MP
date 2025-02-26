@@ -33,6 +33,11 @@
                   users_with_username | selectattr('username', 'in', allowed_users) | list
                 }}
             
+
+          - name: Debug filtered users
+            debug:
+              var: filtered_users
+
           - name: Process filtered users for password rotation
             include_tasks: tasks/user_password_rotate.yaml
             loop: "{{ filtered_users }}"
