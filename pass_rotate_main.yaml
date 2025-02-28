@@ -1,27 +1,32 @@
 - name: Rotate passwords for each inventory group
   hosts: all
   gather_facts: no
-  tasks:
+  run_once: true  # Ensures we collect data only once
 
-    - name: Debug - Show inventory groups
-      run_once: true
+  tasks:
+    - name: Debug - Show all inventory groups
       debug:
-        msg: "Processing inventory group: {{ group_names }}"
+        msg: "Inventory groups: {{ groups.keys() | list }}"
 
     - name: Debug - Show hosts in each group
       debug:
-        msg: "Hosts in group {{ group_names[0] }}: {{ groups[group_names[0]] }}"
-      run_once: true
+        msg: "Hosts in group {{ item }}: {{ groups[item] }}"
+      loop: "{{ groups.keys() | list }}"
 
-    - name: Generate a new password for the group
-      run_once: true
+    - name: Generate a new password for each group
       set_fact:
         final_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+      loop: "{{ groups.keys() | list }}"
+      loop_control:
+        loop_var: target_group
 
-    - name: Debug - Show generated password for the group
+    - name: Debug - Show generated password per group
       debug:
-        msg: "Generated password for group {{ group_names[0] }}: {{ final_password }}"
-      run_once: true
+        msg: "Generated password for group {{ target_group }}: {{ final_password }}"
+      loop: "{{ groups.keys() | list }}"
+      loop_control:
+        loop_var: target_group
+
 
     # - name: Rotate password on each host
     #   include_tasks: user_password_rotate.yaml
