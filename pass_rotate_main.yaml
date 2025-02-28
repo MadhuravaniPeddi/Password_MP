@@ -1,47 +1,29 @@
-- name: Fetch a password from Secret Server, reset password on target hosts, and send email
+- name: Rotate passwords for each inventory group
   hosts: all
-  gather_facts: false
-  
-  vars_files:
-    - vars/variables.yaml  
-
+  gather_facts: no
   tasks:
-      - name: Restrict password rotation to root and service accounts (allowed_users)
-        block:
-          - name: Dynamically add username to users based on secret_name
-            set_fact:
-              users_with_username: >-
-                {{
-                  users | map(
-                    'combine',
-                    {
-                      'username': item.secret_name.split('_')[-1] | lower,
-                      'email_recipients': item.email_recipients | default(default_email_recipients)
-                    }
-                  ) | list
-                }}
 
-            loop: "{{ users }}"
-            loop_control:
-              loop_var: item
-            # run_once: true
+    - name: Debug - Show inventory groups
+      run_once: true
+      debug:
+        msg: "Processing inventory group: {{ group_names }}"
 
-          - name: Filter users based on allowed_users
-            set_fact:
-              filtered_users: >-
-                {{
-                  users_with_username | selectattr('username', 'in', allowed_users) | list
-                }}
-            
+    - name: Debug - Show hosts in each group
+      debug:
+        msg: "Hosts in group {{ group_names[0] }}: {{ groups[group_names[0]] }}"
+      run_once: true
 
-          - name: Debug filtered users
-            debug:
-              var: filtered_users
+    - name: Generate a new password for the group
+      run_once: true
+      set_fact:
+        final_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
 
-          - name: Process filtered users for password rotation
-            include_tasks: tasks/user_password_rotate.yaml
-            loop: "{{ filtered_users }}"
-            loop_control:
-              loop_var: user_details
+    - name: Debug - Show generated password for the group
+      debug:
+        msg: "Generated password for group {{ group_names[0] }}: {{ final_password }}"
+      run_once: true
 
-
+    # - name: Rotate password on each host
+    #   include_tasks: user_password_rotate.yaml
+    #   vars:
+    #     final_password: "{{ final_password }}"

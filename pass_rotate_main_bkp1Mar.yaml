@@ -1,0 +1,47 @@
+- name: Fetch a password from Secret Server, reset password on target hosts, and send email
+  hosts: all
+  gather_facts: false
+  
+  vars_files:
+    - vars/variables.yaml  
+
+  tasks:
+      - name: Restrict password rotation to root and service accounts (allowed_users)
+        block:
+          - name: Dynamically add username to users based on secret_name
+            set_fact:
+              users_with_username: >-
+                {{
+                  users | map(
+                    'combine',
+                    {
+                      'username': item.secret_name.split('_')[-1] | lower,
+                      'email_recipients': item.email_recipients | default(default_email_recipients)
+                    }
+                  ) | list
+                }}
+
+            loop: "{{ users }}"
+            loop_control:
+              loop_var: item
+            # run_once: true
+
+          - name: Filter users based on allowed_users
+            set_fact:
+              filtered_users: >-
+                {{
+                  users_with_username | selectattr('username', 'in', allowed_users) | list
+                }}
+            
+
+          - name: Debug filtered users
+            debug:
+              var: filtered_users
+
+          - name: Process filtered users for password rotation
+            include_tasks: tasks/user_password_rotate.yaml
+            loop: "{{ filtered_users }}"
+            loop_control:
+              loop_var: user_details
+
+
