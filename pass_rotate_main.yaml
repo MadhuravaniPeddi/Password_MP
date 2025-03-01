@@ -1,7 +1,7 @@
 - name: Rotate passwords for each inventory group
   hosts: all
   gather_facts: no
-  run_once: true  # Ensures the task runs once and applies globally
+  run_once: true  # Run once and store variables globally
 
   tasks:
     - name: Filter only the groups with hosts in the current play (limited groups)
@@ -17,18 +17,18 @@
         msg: "Hosts in group {{ item }}: {{ groups[item] }}"
       loop: "{{ limited_groups }}"
 
-    - name: Generate a new password for each group and store globally
+    - name: Generate passwords for each group and store in a dictionary
       set_fact:
-        final_password_{{ item }}: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+        group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }) }}"
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
       delegate_to: localhost
       run_once: true
 
-    - name: Debug - Show generated password per group
+    - name: Debug - Show generated passwords per group
       debug:
-        msg: "Generated password for group {{ item }}: {{ hostvars['localhost']['final_password_' ~ item] }}"
+        msg: "Generated password for group {{ item }}: {{ hostvars['localhost']['group_passwords'][item] }}"
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
