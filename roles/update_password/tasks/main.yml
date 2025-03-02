@@ -63,6 +63,11 @@
     comment: "Updating password for secret :   {{ secret_name }}"
 
 
+- name: Debug - Show secret details before update
+  debug:
+    msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} for Group: {{ group_item }}"
+
+
 - name: Update password
   uri:
     url: "{{ api_url2 }}"
