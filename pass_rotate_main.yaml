@@ -38,11 +38,11 @@
       with_items: "{{ limited_groups }}"
 
     - name: Store group passwords globally
-      set_fact:
+      add_host:
+        name: "global_passwords"
         group_pwds: "{{ group_passwords }}"
-      delegate_to: localhost
       run_once: true
-      cacheable: yes
+
 
 
     - name: Debug - Show stored passwords dictionary
