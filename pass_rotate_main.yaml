@@ -37,15 +37,23 @@
         group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
       with_items: "{{ limited_groups }}"
 
+    - name: Store group passwords globally
+      set_fact:
+        group_pwds: "{{ group_passwords }}"
+      delegate_to: localhost
+      run_once: true
+      cacheable: yes
+
+
     - name: Debug - Show stored passwords dictionary
       debug:
-        var: group_passwords
+        var: group_pwds
 
 
 
     - name: Debug - Show generated passwords per group
       debug:
-        msg: "Generated password for group {{ item }}: {{ hostvars['localhost']['group_passwords'][item] }}"
+        msg: "Generated password for group {{ item }}: {{ hostvars['localhost']['group_pwds'][item] }}"
       loop: "{{ limited_groups }}"
       loop_control:
         loop_var: item
