@@ -65,7 +65,7 @@
 
 - name: Debug - Show secret details before update
   debug:
-    msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} for Group: {{ group_item }}"
+    msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} for Group: {{ group_name }}"
 
 
 - name: Update password
