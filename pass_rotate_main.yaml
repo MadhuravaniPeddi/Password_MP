@@ -28,23 +28,19 @@
         msg: "Hosts in group {{ item }}: {{ groups[item] }}"
       loop: "{{ limited_groups }}"
 
-    # - name: Generate passwords for each group and store in a dictionary
-    #   set_fact:
-    #     group_passwords: "{{ hostvars['localhost'].get('group_passwords', {}) | combine({ item: lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }) }}"
-    #   loop: "{{ limited_groups }}"
-    #   loop_control:
-    #     loop_var: item
-    #   delegate_to: localhost
-    #   run_once: true
+    - name: Initialize group_passwords as an empty dictionary
+      set_fact:
+        group_passwords: {}
 
     - name: Generate passwords for each group and store in a dictionary
       set_fact:
-        group_passwords: >-
-          {{
-            group_passwords | default({}) |
-            combine({item: lookup('password', '/dev/null length=16')})
-          }}
+        group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
       with_items: "{{ limited_groups }}"
+
+    - name: Debug - Show stored passwords dictionary
+      debug:
+        var: group_passwords
+
 
 
     - name: Debug - Show generated passwords per group
