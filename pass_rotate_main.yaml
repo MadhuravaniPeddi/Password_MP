@@ -10,9 +10,14 @@
         msg: "Ansible limit: {{ ansible_limit | default('Not Defined') }}"
 
 
-    - name: Filter only the groups that contain hosts in this play
+    # - name: Filter only the groups that contain hosts in this play
+    #   set_fact:
+    #     limited_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | select('match', '^.*') | select('in', ansible_limit.split(',')) | list }}"
+
+    - name: Normalize ansible_limit and extract valid groups
       set_fact:
-        limited_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | select('match', '^.*') | select('in', ansible_limit.split(',')) | list }}"
+        limited_groups: "{{ ansible_limit.split(',') | map('trim') | select('in', groups.keys()) | list }}"
+
 
     - name: Debug - Show only groups in the limit
       debug:
