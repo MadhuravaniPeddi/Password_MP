@@ -9,7 +9,7 @@
       debug:
         msg: "Ansible limit: {{ ansible_limit | default('Not Defined') }}"
 
-    - name: Extract valid groups from ansible_limit
+    - name: Normalize ansible_limit and extract valid groups
       set_fact:
         limited_groups: "{{ ansible_limit.split(',') | map('trim') | select('in', groups.keys()) | list }}"
 
@@ -22,10 +22,14 @@
         msg: "Hosts in group {{ item }}: {{ groups[item] }}"
       loop: "{{ limited_groups }}"
 
+    - name: Initialize group_passwords as an empty dictionary
+      set_fact:
+        group_passwords: {}
+
     - name: Generate passwords for each group and store in a dictionary
       set_fact:
         group_passwords: "{{ group_passwords | default({}) | combine({ item: lookup('password', '/dev/null length=16') }) }}"
-      loop: "{{ limited_groups }}"
+      with_items: "{{ limited_groups }}"
 
     - name: Store group passwords globally
       add_host:
@@ -38,12 +42,8 @@
         var: hostvars['global_passwords'].group_pwds
       run_once: true
 
-    - name: Debug - Show generated passwords per group
-      debug:
-        msg: "{{ hostvars['global_passwords']['group_pwds'] }}"
-      run_once: true
-
-    # - name: Rotate password on each host
-    #   include_tasks: user_password_rotate.yaml
-    #   vars:
-    #     final_password: "{{ final_password }}"
+    - name: Rotate password on each host
+      include_tasks: user_password_rotate.yaml
+      loop: "{{ limited_groups }}"
+      loop_control:
+        loop_var: group_name
