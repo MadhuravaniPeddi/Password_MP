@@ -3,6 +3,9 @@
   gather_facts: no
   run_once: true
 
+  vars_files:
+    - vars/variables.yaml  
+
   tasks:
 
     - name: Debug - Show ansible_limit
