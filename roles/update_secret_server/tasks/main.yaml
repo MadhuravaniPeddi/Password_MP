@@ -17,3 +17,10 @@
     secret_id: "{{ found_secret_id }}"
     group_name: "{{ group_name1 }}"
 
+
+- name: Send Email Notification
+  include_role:
+    name: send_email_notification
+  vars:
+    group_name: "{{ group_name1 }}"
+
