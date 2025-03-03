@@ -1,7 +1,7 @@
 - name: Rotate passwords for each inventory group
   hosts: all
   gather_facts: no
-  run_once: true
+  # run_once: true
 
   vars_files:
     - vars/variables.yaml  
