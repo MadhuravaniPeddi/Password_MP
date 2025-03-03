@@ -1,0 +1,7 @@
+- name: Update password in Secret Server for each group
+  include_role:
+    name: update_password
+  vars:
+    secret_name: "{{ user_details.secret_name }}"
+    final_password: "{{ final_pwd }}"
+    secret_id: "{{ found_secret_id }}"

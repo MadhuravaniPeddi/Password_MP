@@ -1,0 +1,23 @@
+- name: Send Email Notification
+  community.general.mail:
+    host: "{{ smtp_server }}"
+    port: "{{ smtp_port }}"
+    from: "{{ email_sender }}"
+    to: "{{ user_details.email_recipients | join(', ') }}"
+    subject: "Password Rotation - Group: {{ group_name }}"
+    body: |
+      Hi,
+
+      The password for the following user has been successfully rotated:
+
+      **Group**: {{ group_name }}
+      **Hosts**: {{ groups[group_name] | join(', ') }}
+      **User**: {{ user_details.username }}
+      **Secret Name**: {{ user_details.secret_name }}
+      **Secret ID**: {{ found_secret_id }}
+      **URL**: https://centroid.secretservercloud.com/app/#/secrets/{{ found_secret_id }}/general
+
+      Thanks & Regards,
+      Automation Team
+  delegate_to: localhost
+  run_once: true
