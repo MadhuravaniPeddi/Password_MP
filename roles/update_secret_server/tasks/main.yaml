@@ -1,3 +1,13 @@
+- name: Set group_name variable correctly
+  set_fact:
+    group_name1: "{{ group_names[0] }}"
+
+- name: Debug - Show resolved group_name
+  debug:
+    var: group_name1
+
+
+
 - name: Update password in Secret Server for each group
   include_role:
     name: update_password
@@ -5,5 +15,5 @@
     secret_name: "{{ user_details.secret_name }}"
     final_password: "{{ final_pwd }}"
     secret_id: "{{ found_secret_id }}"
-    group_name: "{{ group_names[0] }}"
+    group_name: "{{ group_name1 }}"
 
