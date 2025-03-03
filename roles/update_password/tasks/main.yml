@@ -8,7 +8,7 @@
 
 - name: Set variables
   set_fact:
-    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ user_details.secret_name }}"
+    api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
     tkn: "{{ tkn }}"
 
 
