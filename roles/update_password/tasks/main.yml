@@ -1,3 +1,9 @@
+- name: Debug - Show available variables
+  debug:
+    var: vars
+
+
+
 
 - name: Debug secret_name before API call
   debug:
