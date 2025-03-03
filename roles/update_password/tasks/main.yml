@@ -65,7 +65,7 @@
 
 - name: Debug - Show secret details before update
   debug:
-    msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} for Group: {{ group_name | default('UNKNOWN') }}"
+    msg: "Updating Secret Name: {{ secret_name }}, Secret ID: {{ secret_id }} {% if group_name is defined %} for Group: {{ group_name }} {% else %} (Group Name Not Defined) {% endif %}"
 
 
 - name: Update password
