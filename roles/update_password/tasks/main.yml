@@ -60,7 +60,7 @@
     item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
     secret_name_exst: "{{ existing_secret.json['name'] }}"
     secret_id: "{{ existing_secret.json['id'] }}"
-    comment: "Updating password for secret :   {{ secret_name }}"
+    comment: "Updating password for secret :   {{ user_details.secret_name }}"
 
 
 - name: Debug - Show secret details before update
