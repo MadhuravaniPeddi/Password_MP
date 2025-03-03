@@ -5,4 +5,4 @@
     secret_name: "{{ user_details.secret_name }}"
     final_password: "{{ final_pwd }}"
     secret_id: "{{ found_secret_id }}"
-    group_name1: "{{ group_name }}"
+
