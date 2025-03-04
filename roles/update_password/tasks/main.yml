@@ -1,13 +1,18 @@
-- name: Debug - Show available variables
+# - name: Debug - Show available variables
+#   debug:
+#     var: vars
+
+
+
+
+- name: Debug all variables before API call
   debug:
-    var: vars
-
-
-
-
-- name: Debug secret_name before API call
-  debug:
-    msg: "Processing secret_name: {{ secret_name }} for host {{ inventory_hostname }}"
+    msg:
+      - "Processing secret_name: {{ secret_name }}"
+      - "Processing for host: {{ inventory_hostname }}"
+      - "Group: {{ group_names }}"
+      - "User details: {{ user_details }}"
+      - "Final password: {{ final_password }}"
   run_once: false
 
 
