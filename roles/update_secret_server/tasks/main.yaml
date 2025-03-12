@@ -1,3 +1,8 @@
+- name: Show group_name
+  debug:
+    msg: "{{ group_name }}"
+
+
 - name: Set group_name variable correctly
   set_fact:
     group_name1: "{{ group_name }}"
