@@ -19,21 +19,27 @@
     global_group_name: "{{ group_name }}"
 
 
-- name: Debug - Show resolved group_name correctly
+
+- name: Store secret_name globally before updating Secret Server
+  set_fact:
+    global_secret_name: "{{ user_details.secret_name }}"
+
+- name: Debug - Show values before updating Secret Server
   debug:
-    msg: "Resolved group name: {{ global_group_name }} (Original: {{ group_name }})"
+    msg: "Updating Secret Server - Group: {{ global_group_name }}, Secret: {{ global_secret_name }}"
+
 
 - name: Update password in Secret Server for each group
   include_role:
     name: update_password
   vars:
-    secret_name: "{{ user_details.secret_name }}"
+    secret_name: "{{ global_secret_name }}"
     final_password: "{{ final_pwd }}"
     secret_id: "{{ found_secret_id }}"
-    group_name: "{{ group_name1 }}"
+    group_name: "{{ global_group_name }}"
 
 - name: Send Email Notification
   include_role:
     name: send_email_notification
   vars:
-    group_name: "{{ group_name1 }}"
+    group_name: "{{ global_group_name }}"
