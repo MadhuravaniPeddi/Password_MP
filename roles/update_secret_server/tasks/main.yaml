@@ -1,6 +1,6 @@
-- name: Show group_name
+- name: Debug - Check if group_name is received in update_secret_server
   debug:
-    msg: "{{ group_name }}"
+    msg: "Received group_name: {{ group_name | default('NOT RECEIVED') }}"
 
 
 - name: Set group_name variable correctly
