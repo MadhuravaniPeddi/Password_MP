@@ -1,9 +1,33 @@
-- name: Rotate password for database users
-  community.general.sql:
-    login_host: "{{ db_host }}"
-    login_user: "{{ db_admin_user }}"
-    login_password: "{{ db_admin_password }}"
-    login_db: "{{ db_service }}"
-    query: "ALTER USER {{ item }} IDENTIFIED BY '{{ db_passwords[item] }}';"
-  loop: "{{ db_users }}"
-  no_log: true
+---
+- name: Check account status of the target Oracle user
+  shell: |
+    . CEBSTRGT_cenartrgtdb01.env
+    sqlplus / as sysdba <<EOF
+    SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
+    SELECT account_status FROM dba_users WHERE username = SYS
+    EXIT;
+    EOF
+  register: account_status
+  changed_when: false
+#UPPER('{{ target_user }}');
+#{{ target_user }}
+#{{ new_password }}
+- name: Debug: Show account status output
+  debug:
+    msg: "Account status: {{ account_status.stdout | trim }}"
+
+- name: Change password for user if account is OPEN
+  shell: |
+    . CEBSTRGT_cenartrgtdb01.env
+    sqlplus / as sysdba <<EOF
+    ALTER USER SYS IDENTIFIED BY "hhhh";
+    EXIT;
+    EOF
+  when: account_status.stdout | trim == "OPEN"
+  register: password_change
+
+- name: Debug: Show password change result
+  debug:
+    var: password_change.stdout
+  when: password_change is defined
+
