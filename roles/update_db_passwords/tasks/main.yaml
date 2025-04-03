@@ -2,6 +2,7 @@
 - name: Check account status of the target Oracle user
   shell: |
     whoami
+    ls *.env
     . CEBSTRGT_cenartrgtdb01.env
     sqlplus / as sysdba <<EOF
     SET PAGES 0 FEEDBACK OFF VERIFY OFF HEADING OFF;
