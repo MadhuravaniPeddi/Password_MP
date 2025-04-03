@@ -12,7 +12,7 @@
 #UPPER('{{ target_user }}');
 #{{ target_user }}
 #{{ new_password }}
-- name: Debug: Show account status output
+- name: Debug Show account status output
   debug:
     msg: "Account status: {{ account_status.stdout | trim }}"
 
