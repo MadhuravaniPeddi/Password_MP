@@ -9,9 +9,11 @@
     EOF
   register: account_status
   changed_when: false
+  
 #UPPER('{{ target_user }}');
 #{{ target_user }}
 #{{ new_password }}
+
 - name: Debug Show account status output
   debug:
     msg: "Account status: {{ account_status.stdout | trim }}"
