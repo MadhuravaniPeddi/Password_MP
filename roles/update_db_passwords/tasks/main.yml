@@ -64,7 +64,7 @@
 # -------------------------------------------------------------------
 - name: Generate new password
   set_fact:
-    final_password: "{{ lookup('password', '/dev/null', length=16, chars=special_characters) }}"
+    final_password: "{{ lookup('password', '/dev/null', length=16) }}"
 
   #no_log: true
 
