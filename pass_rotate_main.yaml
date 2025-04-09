@@ -8,6 +8,10 @@
 
   roles:
     - generate_password
-    - update_target_passwords
-    - update_secret_server
+    - fetch_existing_pwd
+
+
+    # - update_target_passwords
+    # - update_secret_server
+
     # - send_email_notification
