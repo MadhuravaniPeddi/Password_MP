@@ -62,22 +62,9 @@
 # -------------------------------------------------------------------
 # Generate a new password for rotation
 # -------------------------------------------------------------------
-
-- name: Generate a random password with required characters
+- name: Generate new password
   set_fact:
-    password_parts:
-      - "{{ lookup('password', '/dev/null', length=1, chars=ascii_uppercase) }}"
-      - "{{ lookup('password', '/dev/null', length=1, chars=digits) }}"
-      - "{{ lookup('password', '/dev/null', length=1, chars=punctuation) }}"
-      - "{{ lookup('password', '/dev/null', length=9, chars=ascii_letters + digits + punctuation) }}"
-
-- name: Combine password parts and shuffle
-  set_fact:
-    final_password: "{{ password_parts | join('') | shuffle | join('') }}"
-
-- name: Display the generated password
-  debug:
-    msg: "Generated password: {{ final_password }}"
+    final_password: "{{ lookup('password', '/dev/null', length=16, chars=special_characters) }}"
 
   #no_log: true
 
