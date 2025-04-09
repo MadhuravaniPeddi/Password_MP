@@ -84,7 +84,7 @@
 
     - name: Update password for target Oracle user on PDB
       shell: |
-        source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+        source {{ ORACLE_HOME }}/{{ PDB_ENV }}
         sqlplus / as sysdba <<EOF
         ALTER SESSION SET CONTAINER=EBS_PDB;
         ALTER USER {{ target_user | upper }} IDENTIFIED BY "{{ final_password }}";
@@ -93,11 +93,27 @@
       when: dbtype == "PDB"
       register: password_change_pdb
 
-    - name: Validate new Oracle password
+    - name: Validate new Oracle password when CDB
       shell: |
+        source {{ ORACLE_HOME }}/{{ CDB_ENV }}
         sqlplus "{{ target_user | upper }}"/"{{ final_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
+      args:
+        executable: /bin/bash
+      when: dbtype == "CDB"
+      register: validation
+      changed_when: false
+    
+    - name: Validate new Oracle password when PDB
+      shell: |
+        source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+        sqlplus "{{ target_user | upper }}"/"{{ final_password }}"@EBSTRGT as sysdba <<EOF
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      when: dbtype == "PDB"
       register: validation
       changed_when: false
 
@@ -156,11 +172,27 @@
       when: dbtype == "PDB"
       register: rollback_pdb
     
-    - name: Validate old Oracle password
+    - name: Validate old Oracle password when CDB
       shell: |
-        sqlplus {{ target_user | upper }}/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
+        source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+        sqlplus "{{ target_user | upper }}"/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
         EXIT;
         EOF
+      args:
+        executable: /bin/bash
+      when: dbtype == "CDB"
+      register: validation
+      changed_when: false
+    
+    - name: Validate old Oracle password when PDB
+      shell: |
+        source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+        sqlplus "{{ target_user | upper }}"/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      when: dbtype == "PDB"
       register: validation
       changed_when: false
     
