@@ -1,6 +1,6 @@
 - name: Debug - Verify received secret_name and group_name
   debug:
-    msg: "Processing host: {{ inventory_hostname }}, Group: {{ group_name }}, Secret Name: {{ secret_name }}"
+    msg: "Processing host: {{ inventory_hostname }}, Group: {{ group_name }}, Secret Name: {{ user_details.secret_name }}"
 
 - name: Set variables
   set_fact:
