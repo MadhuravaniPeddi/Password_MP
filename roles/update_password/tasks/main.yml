@@ -47,7 +47,7 @@
     return_content: yes
   register: existing_secret
   delegate_to: localhost
-  no_log: true  # Hide passwords in logs
+  # no_log: true  # Hide passwords in logs
 
 - name: Set siteId, fieldId, itemId for password
   set_fact:
@@ -91,4 +91,4 @@
       comment: "{{ comment }}"
   register: update_response
   delegate_to: localhost
-  no_log: true
+  # no_log: true
