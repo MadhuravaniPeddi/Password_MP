@@ -49,14 +49,14 @@
 
 - name: Set secret details facts and capture old password
   set_fact:
-    site_id: "{{ existing_secret.json.siteId }}"
-    folder_id: "{{ existing_secret.json.folderId }}"
-    field_id: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
-    item_id: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).itemId }}"
-    secret_name: "{{ existing_secret.json.name }}"
+    site_id: "{{ existing_secret.json['siteId'] }}"
+    folder_id: "{{ existing_secret.json['folderId'] }}"
+    field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+    item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+    secret_name: "{{ existing_secret.json['name'] }}"
     secret_id: "{{ existing_secret.json.id }}"
     comment: "Updating password for secret: {{ secret_name }}"
-    old_password: "{{ (existing_secret.json.items | selectattr('slug', 'equalto', 'password') | first).itemValue }}"
+    old_password: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemValue }}"
   #no_log: true
 
 # -------------------------------------------------------------------
