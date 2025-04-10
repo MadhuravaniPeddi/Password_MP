@@ -1,11 +1,13 @@
-- name: Loop through users defined in inventory group
-  set_fact:
-    user_item: "{{ item }}"
-  with_items: "{{ users }}"
+- name: Loop through users defined in inventory group "{{ current_group_name }}"
+  vars:
+    user_list: "{{ hostvars[groups[current_group_name][0]].users | default([]) }}"
+  loop: "{{ user_list }}"
+  loop_control:
+    loop_var: user_info
 
-- name: Debug - Verify received secret_name
   debug:
-    msg: "Fetching password for Secret: {{ user_item.secret_name }}"
+    msg: "Fetching password for Secret: {{ user_info.secret_name }}"
+
 
 - name: Set API URL to search for secret
   set_fact:
