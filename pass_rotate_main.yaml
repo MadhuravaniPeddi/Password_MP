@@ -1,18 +1,16 @@
-- name: Rotate passwords for inventory groups
-  hosts: "{{ target_groups }}"
-  gather_facts: no
-  serial: 1
-
-  vars_files:
-    - vars/variables.yaml
+- name: Rotate passwords for all inventory groups
+  hosts: all
+  gather_facts: false
+  any_errors_fatal: true
+  run_once: true
 
   tasks:
-    - name: Loop through each host to access group vars
-      include_tasks: tasks/group_rotate_wrapper.yaml
+    - name: Loop through each host in scope (limited by OLAM)
+      include_tasks: tasks/password_rotation_wrapper.yaml
       loop: "{{ ansible_play_hosts }}"
       loop_control:
-        loop_var: group_ref_host
-      run_once: true
+        loop_var: inventory_host
+
 
 
 
