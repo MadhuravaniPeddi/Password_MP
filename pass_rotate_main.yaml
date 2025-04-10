@@ -5,12 +5,17 @@
     - vars/variables.yaml
   vars:
     target_groups: "{{ ansible_limit.split(',') }}"  # Groups passed in --limit
+
   tasks:
-    - name: Rotate password for each group
-      include_tasks: tasks/group_rotate_wrapper.yaml
-      loop: "{{ target_groups }}"
-      loop_control:
-        loop_var: target_group
+  - name: Rotate password for each group
+    include_vars: vars/variables.yaml
+
+  - name: Include group-level playbook for each group
+    import_playbook: "group_playbooks/group_rotate_wrapper.yaml"
+    vars:
+      target_group: "{{ item }}"
+    loop: "{{ target_groups }}"
+
   
   
   
