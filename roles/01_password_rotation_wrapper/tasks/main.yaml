@@ -16,20 +16,20 @@
 #     user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
 
 
-- name: Set a reference host for group {{ group_name }}
+- name: Set a reference host for group {{ user_group }}
   set_fact:
-    reference_host: "{{ groups[group_name] | first }}"
+    reference_host: "{{ groups[user_group] | first }}"
 
-- name: Retrieve users from hostvars for group {{ group_name }}
+- name: Retrieve users from hostvars for group {{ user_group }}
   set_fact:
     group_users: "{{ hostvars[reference_host].users | selectattr('secret_name', 'defined') | list }}"
 
 - name: Ensure group_users is not empty before proceeding
   fail:
-    msg: "No valid users found for group {{ group_name }}. Check inventory configuration."
+    msg: "No valid users found for group {{ user_group }}. Check inventory configuration."
   when: group_users | length == 0
 
-- name: Extract user details for group {{ group_name }}
+- name: Extract user details for group {{ user_group }}
   set_fact:
     user_details:
       username: "{{ group_users[0].secret_name.split('_')[-1] | lower }}"
@@ -38,7 +38,7 @@
 
 - name: Debug - Show extracted user details
   debug:
-    msg: "Group: {{ group_name }}, Username: {{ user_details.username }}, Secret Name: {{ user_details.secret_name }}, Email Recipients: {{ user_details.email_recipients }}"
+    msg: "Group: {{ user_group }}, Username: {{ user_details.username }}, Secret Name: {{ user_details.secret_name }}, Email Recipients: {{ user_details.email_recipients }}"
 
 
 
