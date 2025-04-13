@@ -16,6 +16,10 @@
 #     user_list: "{{ hostvars[inventory_hostname]['group_names'] | map('extract', hostvars[inventory_hostname]) | selectattr('users', 'defined') | map(attribute='users') | list | first | default([]) }}"
 
 
+- name: Set a reference host for group {{ group_name }}
+  set_fact:
+    reference_host: "{{ groups[group_name] | first }}"
+
 - name: Retrieve users from hostvars for group {{ group_name }}
   set_fact:
     group_users: "{{ hostvars[reference_host].users | selectattr('secret_name', 'defined') | list }}"
@@ -38,14 +42,13 @@
 
 
 
+# - name: "DEBUG: Users from inventory group"
+#   debug:
+#     var: user_list
 
-- name: "DEBUG: Users from inventory group"
-  debug:
-    var: user_list
-
-- name: "Include group processor role for this group"
-  include_role:
-    name: 02_process_group
-  vars:
-    current_user_group: "{{ user_group }}"
-    current_user_list: "{{ user_list }}"
+# - name: "Include group processor role for this group"
+#   include_role:
+#     name: 02_process_group
+#   vars:
+#     current_user_group: "{{ user_group }}"
+#     current_user_list: "{{ user_list }}"
