@@ -1,7 +1,7 @@
 # pass_rotate_main.yaml
 
 - name: Rotate passwords for all inventory groups
-  hosts: localhost
+  hosts: all
   gather_facts: false
 
   vars_files:
