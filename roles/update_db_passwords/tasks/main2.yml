@@ -1,0 +1,180 @@
+---
+- name: Group-Wise Password Rotation with Delinea Secret Server Integration and Selective Rollback
+  hosts: "{{ target_groups | default('all') }}"
+  gather_facts: yes
+  vars:
+    # Example structure: Each group defines the list of users whose passwords need rotation.
+    groups_users:
+      webservers:
+        - alice
+        - bob
+      databases:
+        - carol
+        - dave
+
+    # Delinea Secret Server API details (define these securely in your vault or external variables)
+    delinea_api_url: "https://secrets.example.com/api"
+    delinea_api_token: "YOUR_DELINEA_API_TOKEN"
+
+    # Email notification settings
+    mail_from: "ansible@example.com"
+    mail_to: "ops-team@example.com"
+    smtp_server: "smtp.example.com"
+
+    # Password generation parameters
+    password_length: 12
+    password_chars: "ascii_letters,digits"
+
+  # Loop per target group (only groups that are targeted via --limit will be executed)
+  tasks:
+
+    - name: Set list of users for current group(s)
+      set_fact:
+        current_users: "{{ groups_users[inventory_hostname_group] | default([]) }}"
+      vars:
+        # Assuming the inventory_hostname_group is set externally or derived from the playbook context.
+        # Alternatively, you might loop over all groups in groups_users and check if they match inventory groups.
+        inventory_hostname_group: "{{ group_names | intersect(groups_users | dict2items | map(attribute='key') | list) | first }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Debug: Display current users for the target group
+      debug:
+        msg: "Users to process for this group: {{ current_users }}"
+      run_once: true
+      delegate_to: localhost
+
+    # Process each "group-user" combination sequentially using a loop.
+    - name: Process each user in the target group for password rotation
+      block:
+        - name: Retrieve the current (old) password from Delinea Secret Server for user {{ item }}
+          uri:
+            url: "{{ delinea_api_url }}/secrets/{{ item }}"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ delinea_api_token }}"
+            validate_certs: no
+            return_content: yes
+          register: secret_retrieval
+          delegate_to: localhost
+
+        - name: Set old password fact for user {{ item }}
+          set_fact:
+            old_password_{{ item }}: "{{ secret_retrieval.json.password }}"
+          delegate_to: localhost
+
+        - name: Generate a new password for user {{ item }}
+          # Using lookup to generate a password; ensure the lookup plugin is available.
+          set_fact:
+            new_password: "{{ lookup('password', '/dev/null', length=password_length, chars=password_chars) }}"
+          delegate_to: localhost
+
+        - name: Save new password in temporary vars for rollback if needed
+          set_fact:
+            "password_update_{{ item }}":
+              new: "{{ new_password }}"
+              old: "{{ secret_retrieval.json.password }}"
+          delegate_to: localhost
+
+        - name: Update password on target hosts for user {{ item }}
+          block:
+            - name: Update password for user {{ item }} on host {{ inventory_hostname }}
+              # Example: using a module that updates the system user password; replace with your actual implementation.
+              user:
+                name: "{{ item }}"
+                password: "{{ new_password | password_hash('sha512') }}"
+              register: user_update_result
+              # Simulate failures optionally by using a condition or check the result.
+              # When running on multiple hosts, this task will run on each host in the group.
+          rescue:
+            - name: Log failure for user {{ item }} on host {{ inventory_hostname }}
+              debug:
+                msg: "Failed updating the password for user {{ item }} on host {{ inventory_hostname }}. Initiating rollback."
+              # Set a flag for this user to trigger a rollback.
+              set_fact:
+                "rollback_needed_{{ item }}": true
+
+            # Continue with the rescue block so that rollback is triggered even after one failure.
+
+        - name: Pause briefly to allow for asynchronous propagation if needed (optional)
+          pause:
+            seconds: 2
+          delegate_to: localhost
+
+        # Use a run_once (or a delegated task) to assess if any host encountered an error.
+        - name: Check if rollback is needed for user {{ item }}
+          run_once: true
+          delegate_to: localhost
+          set_fact:
+            "user_{{ item }}_rollback": "{{ hostvars | dict2items 
+              | selectattr('value.rollback_needed_' + item, 'defined')
+              | list | length > 0 }}"
+      loop: "{{ current_users }}"
+      loop_control:
+        loop_var: item
+
+    # The following tasks run with run_once to update the Delinea Secret Server and notify via email.
+    - name: Process post-host-update actions for each user (update secret server or rollback)
+      run_once: true
+      delegate_to: localhost
+      block:
+        - name: Process each user outcome
+          set_fact:
+            user_list: "{{ current_users }}"
+        - name: Handle outcomes for each user in user_list
+          block:
+            - name: Determine if rollback is required for user {{ item }}
+              set_fact:
+                rollback_flag: "{{ hostvars | dict2items 
+                  | selectattr('value.user_' + item + '_rollback', 'defined')
+                  | list | length > 0 }}"
+            - name: If no rollback needed, update Delinea Secret Server with new password for user {{ item }}
+              when: not rollback_flag
+              block:
+                - name: Update Delinea Secret Server with new password for user {{ item }}
+                  uri:
+                    url: "{{ delinea_api_url }}/secrets/{{ item }}"
+                    method: PUT
+                    headers:
+                      Authorization: "Bearer {{ delinea_api_token }}"
+                      Content-Type: "application/json"
+                    body_format: json
+                    body:
+                      password: "{{ hostvars['localhost']['password_update_' + item].new }}"
+                  register: update_secret_result
+
+                - name: Send success email notification for user {{ item }}
+                  mail:
+                    host: "{{ smtp_server }}"
+                    port: 25
+                    to: "{{ mail_to }}"
+                    from: "{{ mail_from }}"
+                    subject: "[SUCCESS] Password Rotation for {{ item }}"
+                    body: "Password rotation for user {{ item }} was successful on all hosts and the Delinea Secret Server has been updated."
+            - name: If rollback is needed, revert the password on all hosts for user {{ item }}
+              when: rollback_flag
+              block:
+                - name: Rollback password on all hosts for user {{ item }}
+                  delegate_to: "{{ inventory_hostname }}"
+                  user:
+                    name: "{{ item }}"
+                    password: "{{ hostvars['localhost']['password_update_' + item].old | password_hash('sha512') }}"
+                  with_items: "{{ groups[inventory_hostname_group] | default([]) }}"
+                  ignore_errors: yes
+
+                - name: Send failure and rollback email notification for user {{ item }}
+                  mail:
+                    host: "{{ smtp_server }}"
+                    port: 25
+                    to: "{{ mail_to }}"
+                    from: "{{ mail_from }}"
+                    subject: "[FAILURE] Password Rotation for {{ item }} - Rollback Executed"
+                    body: "A failure occurred during password rotation for user {{ item }}. The original password has been reinstated on all target hosts."
+          loop: "{{ user_list }}"
+          loop_control:
+            loop_var: item
+
+    - name: Logging complete for password rotation process
+      debug:
+        msg: "Password rotation process completed. Please check email notifications for results."
+

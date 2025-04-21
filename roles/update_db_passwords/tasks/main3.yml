@@ -1,0 +1,282 @@
+---
+- name: Group-Wise Oracle DB Password Rotation with Delinea Secret Server Integration and Selective Rollback
+  hosts: "{{ target_group }}"      # Target group specified via --limit or inventory variable
+  gather_facts: false
+  vars:
+    # Define the users to update for this group (override or set externally as needed)
+    group_users:
+      - alice
+      - bob
+
+    # Delinea Secret Server settings (store sensitive data securely in vault in production)
+    secret_server_base_url: "https://secrets.example.com"
+    tkn: "YOUR_TOKEN"
+
+    # Oracle DB & environment configuration (customize these as appropriate)
+    ORACLE_HOME: "/opt/oracle"
+    CDB_ENV: "cdb_env.sh"
+    PDB_ENV: "pdb_env.sh"
+    dbtype: "CDB"           # Set to either "CDB" or "PDB"; adjust per host if needed
+    EBSTRGT: "EBSTRGT"      # Connection alias
+
+    # Email notification settings
+    smtp_server: "smtp.example.com"
+    smtp_port: 25
+    email_sender: "ansible@example.com"
+  
+  tasks:
+
+    - name: "Rotate passwords for each user in group {{ target_group }}"
+      loop: "{{ group_users }}"
+      loop_control:
+        loop_var: current_user
+      block:
+
+        ######################################################################
+        # SECTION 1: RETRIEVE OLD SECRET DETAILS FROM DELINEA SECRET SERVER
+        ######################################################################
+        - name: Set the secret_name for user {{ current_user }}
+          set_fact:
+            secret_name: "secret_{{ current_user }}"
+          # Adjust secret naming logic as required
+
+        - name: Debug - Verify secret_name and target group for user {{ current_user }}
+          debug:
+            msg: "Secret Name: {{ secret_name }} | Target Group: {{ target_group }}"
+
+        - name: Set API URL for secret retrieval for user {{ current_user }}
+          set_fact:
+            api_url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchField=name&filter.searchText={{ secret_name }}"
+
+        - name: Retrieve matching secrets from Secret Server for user {{ current_user }}
+          uri:
+            url: "{{ api_url }}"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ tkn }}"
+            return_content: yes
+          register: secrets_found
+          delegate_to: localhost
+
+        - name: Debug API response from Secret Server for user {{ current_user }}
+          debug:
+            var: secrets_found.json
+
+        - name: Find the secret ID for {{ secret_name }} for user {{ current_user }}
+          set_fact:
+            found_secret_id: "{{ secrets_found.json.records | selectattr('name', 'equalto', secret_name) | map(attribute='id') | list | first }}"
+
+        - name: Debug found_secret_id for user {{ current_user }}
+          debug:
+            msg: "Secret ID found: {{ found_secret_id }} for secret_name: {{ secret_name }}"
+
+        - name: Set API URL to retrieve secret details for user {{ current_user }}
+          set_fact:
+            api_url2: "{{ secret_server_base_url }}/api/v1/secrets/{{ found_secret_id }}"
+
+        - name: Retrieve existing secret details for user {{ current_user }}
+          uri:
+            url: "{{ api_url2 }}"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ tkn }}"
+            return_content: yes
+          register: existing_secret
+          delegate_to: localhost
+
+        - name: Set secret details facts and capture old password for user {{ current_user }}
+          set_fact:
+            site_id: "{{ existing_secret.json['siteId'] }}"
+            folder_id: "{{ existing_secret.json['folderId'] }}"
+            field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+            item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+            secret_name: "{{ existing_secret.json['name'] }}"
+            secret_id: "{{ existing_secret.json.id }}"
+            comment: "Updating password for secret: {{ secret_name }}"
+            old_password: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemValue }}"
+
+        ######################################################################
+        # SECTION 2: GENERATE NEW PASSWORD
+        ######################################################################
+        - name: Generate new password for user {{ current_user }}
+          set_fact:
+            final_password: "{{ lookup('password', '/dev/null', length=16) }}"
+
+        - name: Initialize rollback flag for user {{ current_user }}
+          set_fact:
+            rollback_needed: false
+
+        ######################################################################
+        # SECTION 3: ORACLE DB PASSWORD UPDATE ON ALL TARGET HOSTS
+        ######################################################################
+        - name: Update Oracle DB password on CDB on all hosts for user {{ current_user }}
+          shell: |
+            source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+            sqlplus / as sysdba <<EOF
+            ALTER USER {{ current_user | upper }} IDENTIFIED BY "{{ final_password }}";
+            EXIT;
+            EOF
+          when: dbtype == "CDB"
+          with_items: "{{ groups[target_group] }}"
+          delegate_to: "{{ item }}"
+          register: password_change_cdb
+          ignore_errors: yes
+
+        - name: Update Oracle DB password on PDB on all hosts for user {{ current_user }}
+          shell: |
+            source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+            sqlplus / as sysdba <<EOF
+            ALTER SESSION SET CONTAINER=EBS_PDB;
+            ALTER USER {{ current_user | upper }} IDENTIFIED BY "{{ final_password }}";
+            EXIT;
+            EOF
+          when: dbtype == "PDB"
+          with_items: "{{ groups[target_group] }}"
+          delegate_to: "{{ item }}"
+          register: password_change_pdb
+          ignore_errors: yes
+
+        - name: Determine if any host update failed for user {{ current_user }}
+          set_fact:
+            rollback_needed: true
+          when: >
+            (dbtype == "CDB" and (password_change_cdb.results | selectattr('rc', 'ne', 0) | list | length > 0)) or
+            (dbtype == "PDB" and (password_change_pdb.results | selectattr('rc', 'ne', 0) | list | length > 0))
+
+        - name: Pause briefly for propagation (user {{ current_user }})
+          pause:
+            seconds: 2
+          delegate_to: localhost
+
+        ######################################################################
+        # SECTION 4: UPDATE DELINEA SECRET SERVER & EMAIL NOTIFICATIONS 
+        #          (if no rollback is needed so far)
+        ######################################################################
+        - block:
+            - name: Validate new Oracle password on CDB for user {{ current_user }}
+              shell: |
+                source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+                sqlplus "{{ current_user | upper }}"/"{{ final_password }}"@EBSTRGT as sysdba <<EOF
+                EXIT;
+                EOF
+              args:
+                executable: /bin/bash
+              when: dbtype == "CDB"
+              register: validation_new
+              changed_when: false
+
+            - name: Validate new Oracle password on PDB for user {{ current_user }}
+              shell: |
+                source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+                sqlplus "{{ current_user | upper }}"/"{{ final_password }}"@EBSTRGT as sysdba <<EOF
+                EXIT;
+                EOF
+              args:
+                executable: /bin/bash
+              when: dbtype == "PDB"
+              register: validation_new
+              changed_when: false
+
+            - name: Update Delinea Secret Server with the new password for user {{ current_user }}
+              uri:
+                url: "{{ api_url2 }}"
+                method: PUT
+                headers:
+                  Authorization: "Bearer {{ tkn }}"
+                  Content-Type: "application/json"
+                body_format: json
+                body:
+                  id: "{{ secret_id }}"
+                  name: "{{ secret_name }}"
+                  siteId: "{{ site_id }}"
+                  folderId: "{{ folder_id }}"
+                  items:
+                    - fieldId: "{{ field_id }}"
+                      itemId: "{{ item_id }}"
+                      itemValue: "{{ final_password }}"
+                  active: true
+                  comment: "{{ comment }}"
+              register: update_response
+              delegate_to: localhost
+              # If the response status is not one of the expected values, the task fails,
+              # triggering the rescue branch (rollback actions).
+              failed_when: update_response.status not in [200, 201, 204]
+
+            - name: Send success email notification for user {{ current_user }}
+              mail:
+                host: "{{ smtp_server }}"
+                port: "{{ smtp_port }}"
+                from: "{{ email_sender }}"
+                subject: "Password Rotation Succeeded for {{ current_user }}"
+                to: "sampat.andavarapu@centroid.com"
+                body: >
+                  Password rotation succeeded for {{ current_user }}.
+                  The Oracle DB password and Secret Server have been updated successfully.
+              delegate_to: localhost
+          when: not rollback_needed
+
+        ######################################################################
+        # SECTION 5: ROLLBACK & FAILURE NOTIFICATION (if any update failed)
+        ######################################################################
+      rescue:
+        - name: Rollback Oracle DB password update on CDB for user {{ current_user }} on all hosts
+          shell: |
+            source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+            sqlplus / as sysdba <<EOF
+            ALTER USER {{ current_user | upper }} IDENTIFIED BY "{{ old_password }}";
+            EXIT;
+            EOF
+          when: dbtype == "CDB"
+          with_items: "{{ groups[target_group] }}"
+          delegate_to: "{{ item }}"
+          ignore_errors: yes
+
+        - name: Rollback Oracle DB password update on PDB for user {{ current_user }} on all hosts
+          shell: |
+            source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+            sqlplus / as sysdba <<EOF
+            ALTER SESSION SET CONTAINER=EBS_PDB;
+            ALTER USER {{ current_user | upper }} IDENTIFIED BY "{{ old_password }}";
+            EXIT;
+            EOF
+          when: dbtype == "PDB"
+          with_items: "{{ groups[target_group] }}"
+          delegate_to: "{{ item }}"
+          ignore_errors: yes
+
+        - name: Validate rollback of Oracle DB password on CDB for user {{ current_user }}
+          shell: |
+            source {{ ORACLE_HOME }}/{{ CDB_ENV }}
+            sqlplus "{{ current_user | upper }}"/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
+            EXIT;
+            EOF
+          args:
+            executable: /bin/bash
+          when: dbtype == "CDB"
+          register: validation_old
+          changed_when: false
+
+        - name: Validate rollback of Oracle DB password on PDB for user {{ current_user }}
+          shell: |
+            source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+            sqlplus "{{ current_user | upper }}"/"{{ old_password }}"@EBSTRGT as sysdba <<EOF
+            EXIT;
+            EOF
+          args:
+            executable: /bin/bash
+          when: dbtype == "PDB"
+          register: validation_old
+          changed_when: false
+
+        - name: Send failure email notification for user {{ current_user }} with rollback executed
+          mail:
+            host: "{{ smtp_server }}"
+            port: "{{ smtp_port }}"
+            from: "{{ email_sender }}"
+            subject: "Password Rotation Failed for {{ current_user }} - Rollback Executed"
+            to: "sampat.andavarapu@centroid.com"
+            body: >
+              Password rotation failed for {{ current_user }}.
+              One or more host updates or the Delinea Secret Server update did not complete successfully.
+              The Oracle DB password has been rolled back to its previous value.
+          delegate_to: localhost
