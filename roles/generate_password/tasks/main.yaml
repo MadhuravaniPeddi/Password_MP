@@ -27,6 +27,22 @@
   debug:
     msg: "Processing inventory groups: {{ limited_groups }}"
 
+
+- name: Filter users belonging to the selected groups
+  set_fact:
+    filtered_users: >-
+      {{
+        users
+        | selectattr('secret_name', 'search', '^(' + limited_groups | join('|') + ')_')
+        | list
+      }}
+
+- name: Debug - Filtered users
+  debug:
+    var: filtered_users
+
+
+
 - name: Debug - Show hosts in each selected group
   debug:
     msg: "Hosts in group {{ item }}: {{ groups[item] }}"
