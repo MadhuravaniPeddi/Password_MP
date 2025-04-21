@@ -33,7 +33,7 @@
     filtered_users: >-
       {{
         users |
-        selectattr('secret_name', 'search', '^(?i)(' + limited_groups | map('upper') | join('|') + ')_') |
+        selectattr('secret_name', 'search', '(?i)^(' + (limited_groups | map('upper') | join('|')) + ')_') |
         list
       }}
 
