@@ -1,0 +1,6 @@
+- name: Get limited groups
+  hosts: all
+  tasks:
+    - name: Print limited groups
+      debug:
+        msg: "Limited groups are: {{ limited_groups }}"
