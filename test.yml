@@ -1,9 +1,22 @@
 - name: Get limited groups
   hosts: all
   tasks:
-    - name: Print limited groups
+    - set_fact:
+        val: false
+
+    - name: Attempt to print limited groups
+      block:
+        - name: Print limited groups
+          debug:
+            msg: "Limited groups are: {{ limited_groups }}"
+      rescue:
+        - set_fact:
+            val: true
+
+    - name: Print val (to check if rescue triggered)
       debug:
-        msg: "Limited groups are: {{ limited_groups }}"
-    - name: print group variables
+        msg: "Rescue triggered: {{ val }}"
+
+    - name: Print group variables
       debug:
-        msg: "{{ groups['Cen_NonProd_APP']}}"
+        msg: "{{ groups['Cen_NonProd_APP'] }}"
