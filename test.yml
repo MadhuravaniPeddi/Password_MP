@@ -49,24 +49,24 @@
       debug:
         var: target_groups
 
-- name: "🔄 2) Initialize password_rotation_items list"
-  set_fact:
-    password_rotation_items: []
+    - name: "🔄 2) Initialize password_rotation_items list"
+      set_fact:
+        password_rotation_items: []
 
-- name: "🔄 3) Rotate passwords for each target group"
-  include_tasks: rotate_group.yml
-  loop: "{{ target_groups }}"
-  loop_control:
-    loop_var: group_name
-  vars:
-    group_users: "{{ hostvars[ groups[group_name][0] ].users | default([]) }}"
+    - name: "🔄 3) Rotate passwords for each target group"
+      include_tasks: rotate_group.yml
+      loop: "{{ target_groups }}"
+      loop_control:
+        loop_var: group_name
+      vars:
+        group_users: "{{ hostvars[ groups[group_name][0] ].users | default([]) }}"
 
-- name: Debug – final password_rotation_items
-  debug:
-    var: password_rotation_items
+    - name: Debug – final password_rotation_items
+      debug:
+        var: password_rotation_items
 
-- name: Make password_rotation_items available to later roles
-  set_fact:
-    password_rotation_items: "{{ password_rotation_items }}"
+    - name: Make password_rotation_items available to later roles
+      set_fact:
+        password_rotation_items: "{{ password_rotation_items }}"
 
 
