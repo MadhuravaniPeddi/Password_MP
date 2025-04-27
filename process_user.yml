@@ -62,6 +62,7 @@
           'generated_password':  new_password,
           'password_success':    false,
           'secretserver_success':false,
-          'user':user
+          'user':user,
+          'user_details': user_entry
         } ] }}
 
