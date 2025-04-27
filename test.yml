@@ -37,7 +37,7 @@
 
     - name: Identify groups containing any of the limited hosts
       vars:
-        all_groups: "{{ groups.keys() | list }}"
+        all_groups: "{{ groups.keys() | difference(['all']) | list }}"
       loop: "{{ all_groups }}"
       loop_control:
         loop_var: candidate_group
