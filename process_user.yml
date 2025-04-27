@@ -60,8 +60,8 @@
           'email_recipients':    email_list,
           'retrieved_password':  old_password,
           'generated_password':  new_password,
-          'password_success':    null,
-          'secretserver_success':null,
+          'password_success':    false,
+          'secretserver_success':false,
           'user':user
         } ] }}
 
