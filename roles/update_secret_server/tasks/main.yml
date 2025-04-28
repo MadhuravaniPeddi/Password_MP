@@ -3,6 +3,7 @@
     updated_items: []
 
 - name: Loop through items with successful DB rotation
+  include_tasks: secret_update.yml
   loop: "{{ password_rotation_items }}"
   loop_control:
     loop_var: rotation_item
