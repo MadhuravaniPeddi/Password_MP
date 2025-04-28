@@ -1,6 +1,6 @@
 - name: Initialize flags for {{ rotation_item.secret_name }} in {{ rotation_item.group }}
   set_fact:
-    db_success: false
+    db_success: true
     error_msg_db: ''
 
 - name: Rotate password on each host of {{ rotation_item.group }}
