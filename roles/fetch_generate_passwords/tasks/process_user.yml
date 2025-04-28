@@ -38,6 +38,17 @@
   register: existing_secret
   delegate_to: localhost
 
+- name: Set secret details facts and capture old password
+  set_fact:
+    secret_details_dict:
+      site_id: "{{ existing_secret.json['siteId'] }}"
+      folder_id: "{{ existing_secret.json['folderId'] }}"
+      field_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).fieldId }}"
+      item_id: "{{ (existing_secret.json['items'] | selectattr('slug', 'equalto', 'password') | first).itemId }}"
+      secret_name: "{{ existing_secret.json['name'] }}"
+      secret_id: "{{ existing_secret.json.id }}"
+      comment: "Updating password for secret: {{ secret_name }}"
+
 - name: Capture old_password
   set_fact:
     old_password: >-
@@ -59,6 +70,7 @@
           'generated_password':  new_password,
           'password_success':    false,
           'secretserver_success':false,
-          'user_details': user_entry
+          'user_details': user_entry,
+          'secret_details': secret_details_dict
         } ] }}
 
