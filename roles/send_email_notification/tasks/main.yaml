@@ -71,7 +71,15 @@
               <td>{{ item.error_msg_secret or '-' }}</td>
               <td>{{ item.rollback_db_success | default('–') }}</td>
               <td>{{ item.failed_rollbacks | default('–') }}</td>
-              <td>https://centroid.secretservercloud.com/app/#/secrets/{{ item.secret_details.secret_id }}/general</td>
+              <td>
+              <a
+                href="{{ secret_server_base_url }}/app/#/secrets/{{ item.secret_details.secret_id }}/general"
+                target="_blank"
+                style="text-decoration: none; color: #1a73e8;"
+              >
+                View {{ item.secret_details.secret_name }}
+              </a>
+            </td>
             </tr>
           {% endfor %}
           </tbody>
