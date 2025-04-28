@@ -42,6 +42,7 @@
           <thead>
             <tr style="background-color: #f2f2f2;">
               <th>Group</th>
+              <th>Hosts</th>
               <th>User</th>
               <th>Password Success</th>
               <th>SecretServer Success</th>
@@ -53,6 +54,7 @@
           {% for item in rotation_items %}
             <tr>
               <td>{{ item.group }}</td>
+              <td>{{ groups[item.group] }}
               <td>{{ item.user_details.user }}</td>
               <td>{{ item.password_success }}</td>
               <td>{{ item.secretserver_success }}</td>
