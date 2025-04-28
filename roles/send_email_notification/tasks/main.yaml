@@ -1,23 +1,67 @@
-- name: Send Email Notification
-  community.general.mail:
+# - name: Send Email Notification
+#   community.general.mail:
+#     host: "{{ smtp_server }}"
+#     port: "{{ smtp_port }}"
+#     from: "{{ email_sender }}"
+#     to: "{{ user_details.email_recipients | join(', ') }}"
+#     subject: "Password Rotation - Group: {{ group_name }}"
+#     body: |
+#       Hi,
+
+#       The password for the following user has been successfully rotated:
+
+#       Group: {{ group_name }}
+#       Hosts: {{ groups[group_name] | join(', ') }}
+#       User: {{ user_details.username }}
+#       Secret Name: {{ user_details.secret_name }}
+#       Secret ID: {{ found_secret_id }}
+#       URL: https://centroid.secretservercloud.com/app/#/secrets/{{ found_secret_id }}/general
+
+#       Thanks & Regards,
+#       Automation Team
+#   delegate_to: localhost
+#   run_once: true
+
+- name: Send password rotation report email
+  vars:
+    rotation_items: "{{ password_rotation_items }}"
+    mail_recipients: "{{ rotation_items | map(attribute='user_details.email_recipients') | flatten | unique | join(', ') }}"
+  mail:
     host: "{{ smtp_server }}"
     port: "{{ smtp_port }}"
     from: "{{ email_sender }}"
-    to: "{{ user_details.email_recipients | join(', ') }}"
-    subject: "Password Rotation - Group: {{ group_name }}"
+    to: "{{ mail_recipients }}"
+    subject: "Password Rotation Results"
+    subtype: html
     body: |
-      Hi,
-
-      The password for the following user has been successfully rotated:
-
-      Group: {{ group_name }}
-      Hosts: {{ groups[group_name] | join(', ') }}
-      User: {{ user_details.username }}
-      Secret Name: {{ user_details.secret_name }}
-      Secret ID: {{ found_secret_id }}
-      URL: https://centroid.secretservercloud.com/app/#/secrets/{{ found_secret_id }}/general
-
-      Thanks & Regards,
-      Automation Team
-  delegate_to: localhost
-  run_once: true
+      <html>
+      <body>
+        <p>Dear Team,</p>
+        <p>Here is the latest password rotation report:</p>
+        <table border="1" cellpadding="4" cellspacing="0" style="border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th>Group</th>
+              <th>User</th>
+              <th>Password Success</th>
+              <th>SecretServer Success</th>
+              <th>Error DB</th>
+              <th>Error Secret</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for item in rotation_items %}
+            <tr>
+              <td>{{ item.group }}</td>
+              <td>{{ item.user_details.user }}</td>
+              <td>{{ item.password_success }}</td>
+              <td>{{ item.secretserver_success }}</td>
+              <td>{{ item.error_msg_db or '-' }}</td>
+              <td>{{ item.error_msg_secret or '-' }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <p>Regards,<br/>Automation Team</p>
+      </body>
+      </html>
