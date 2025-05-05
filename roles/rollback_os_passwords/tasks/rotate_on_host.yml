@@ -1,7 +1,7 @@
 - name: Initialize flags for {{ rotation_item.secret_name }} in {{ rotation_item.group }}
   set_fact:
     failed_rollbacks: []
-    rollback_db_success: true
+    rollback_os_success: true
 
 - name: Rotate password on each host of {{ rotation_item.group }}
   loop: "{{ groups[rotation_item.group] }}"
@@ -14,6 +14,6 @@
     updated_items: >-
       {{ updated_items + [ rotation_item
           | combine({
-              'rollback_success': rollback_db_success,
+              'rollback_success': rollback_os_success,
               'failed_rollbacks': failed_rollbacks
             }) ] }}
