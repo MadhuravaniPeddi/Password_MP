@@ -27,7 +27,7 @@
 ---
 # roles/password_rotation_role1/tasks/main.yml
 
-- name: Rotate passwords for each DB user
+- name: Rotate passwords for each OS user
   hosts: all
   gather_facts: no
   run_once: true
