@@ -42,10 +42,10 @@
       shell: |
         source {{ ORACLE_HOME }}/{{ CDB_ENV }}
         sqlplus -s / as sysdba <<EOF
-        WHENEVER SQLERROR EXIT FAILURE
-        SET FEEDBACK OFF
-        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
-        EXIT;
+          WHENEVER SQLERROR EXIT FAILURE
+          SET FEEDBACK OFF
+          ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+          EXIT;
         EOF
       args:
         executable: /bin/bash
@@ -58,11 +58,11 @@
       shell: |
         source {{ ORACLE_HOME }}/{{ PDB_ENV }}
         sqlplus -s / as sysdba <<EOF
-        WHENEVER SQLERROR EXIT FAILURE
-        SET FEEDBACK OFF
-        ALTER SESSION SET CONTAINER=EBS_PDB;
-        ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
-        EXIT;
+          WHENEVER SQLERROR EXIT FAILURE
+          SET FEEDBACK OFF
+          ALTER SESSION SET CONTAINER=EBS_PDB;
+          ALTER USER {{ rotation_item.user_details['user'] | upper }} IDENTIFIED BY "{{ rotation_item.generated_password }}";
+          EXIT;
         EOF
       args:
         executable: /bin/bash
