@@ -59,7 +59,8 @@
 
     - name: Update password for target Oracle user on PDB
       shell: |
-        source {{ ORACLE_HOME }}/{{ PDB_ENV }}
+        . {{ ORACLE_HOME }}/{{ PDB_ENV }}
+        export ORACLE_SID=CEBSTRGT
         sqlplus -s / as sysdba <<EOF
           WHENEVER SQLERROR EXIT FAILURE
           SET FEEDBACK OFF
