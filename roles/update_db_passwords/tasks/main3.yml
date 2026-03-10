@@ -235,7 +235,7 @@
           shell: |
             source {{ ORACLE_HOME }}/{{ PDB_ENV }}
             sqlplus / as sysdba <<EOF
-            ALTER SESSION SET CONTAINER=EBS_PDB;
+            ALTER SESSION SET CONTAINER=EBSTRGT;
             ALTER USER {{ current_user | upper }} IDENTIFIED BY "{{ old_password }}";
             EXIT;
             EOF
