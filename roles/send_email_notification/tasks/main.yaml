@@ -67,8 +67,8 @@
               {% endif %}
               <td>{{ item.password_success }}</td>
               <td>{{ item.secretserver_success }}</td>
-              <td>{{ item.error_msg_password_applied or '-' }}</td>
-              <td>{{ item.error_msg_secret or '-' }}</td>
+              <td>{{ item.error_msg_password_applied | default('-')  }}</td>
+              <td>{{ item.error_msg_secret | default('-') }}</td>
               <td>{{ item.rollback_success | default('–') }}</td>
               <td>{{ item.failed_rollbacks | default('–') }}</td>
               <td>
