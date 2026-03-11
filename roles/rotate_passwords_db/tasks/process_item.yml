@@ -75,10 +75,27 @@
       when: rotation_item.user_details['db_type'] == 'PDB'
       delegate_to: "{{ target_host }}"
 
-    - name: Validate new Oracle password
+    # - name: Validate new Oracle password
+    #   shell: |
+    #     source {{ ORACLE_HOME }}/{{ (rotation_item.user_details['db_type'] == 'CDB') | ternary(CDB_ENV, PDB_ENV) }}
+    #     sqlplus -s "{{ rotation_item.user_details['user'] | upper }}/{{ rotation_item.generated_password }}@EBSTRGT" as sysdba <<EOF
+    #     WHENEVER SQLERROR EXIT FAILURE
+    #     SET FEEDBACK OFF
+    #     EXIT;
+    #     EOF
+    #   args:
+    #     executable: /bin/bash
+    #   register: validation
+    #   failed_when: validation.rc != 0 or 'ORA-' in validation.stdout or 'Enter user-name' in validation.stdout
+    #   changed_when: false
+    #   delegate_to: "{{ target_host }}"
+
+    - name: Validate Oracle password
       shell: |
-        source {{ ORACLE_HOME }}/{{ (rotation_item.user_details['db_type'] == 'CDB') | ternary(CDB_ENV, PDB_ENV) }}
-        sqlplus -s "{{ rotation_item.user_details['user'] | upper }}/{{ rotation_item.generated_password }}@EBSTRGT" as sysdba <<EOF
+        . {{ ORACLE_HOME }}/{{ CDB_ENV }}
+        export ORACLE_SID=CEBSTRGT
+
+        sqlplus -s -L "{{ rotation_item.user_details.user | upper }}/{{ rotation_item.generated_password }}@EBSTRGT" <<EOF
         WHENEVER SQLERROR EXIT FAILURE
         SET FEEDBACK OFF
         EXIT;
@@ -86,8 +103,8 @@
       args:
         executable: /bin/bash
       register: validation
-      failed_when: validation.rc != 0 or 'ORA-' in validation.stdout or 'Enter user-name' in validation.stdout
       changed_when: false
+      failed_when: validation.rc != 0
       delegate_to: "{{ target_host }}"
 
   rescue: 
