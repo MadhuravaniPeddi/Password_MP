@@ -1,0 +1,28 @@
+- name: Initialize flags for {{ rotation_item.user_details.secret_name }} in {{ rotation_item.group }}
+  set_fact:
+    ebs_success: true
+    error_messages_ebs: []
+
+- name: Derive target password for {{ rotation_item.user_details.user }}
+  set_fact:
+    target_password: >-
+      {{
+        rotation_item.retrieved_password
+        if (operation_type | default('rotate')) == 'rollback'
+        else rotation_item.generated_password
+      }}
+
+- name: Rotate or rollback password on each host of {{ rotation_item.group }}
+  loop: "{{ groups[rotation_item.group] }}"
+  loop_control:
+    loop_var: target_host
+  include_tasks: process_item.yml
+
+- name: Append updated EBS rotation item
+  set_fact:
+    updated_items: >-
+      {{ updated_items + [ rotation_item | combine({
+        'password_success': ebs_success,
+        'error_msg_ebs': (error_messages_ebs | join(' | ')),
+        'target_password': target_password
+      }) ] }}

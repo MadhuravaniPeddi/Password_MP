@@ -1,0 +1,23 @@
+- block:
+
+    - name: Apply password change
+      include_tasks: "{{ role_path }}/tasks/strategies/{{ rotation_item.rotation_strategy }}/apply.yml"
+
+    - name: Validate password
+      include_tasks: "{{ role_path }}/tasks/strategies/{{ rotation_item.rotation_strategy }}/validate.yml"
+
+    - name: Mark rotation success on {{ target_host }}
+      set_fact:
+        rotation_success: "{{ rotation_success and true }}"
+
+  rescue:
+
+    - name: Capture rotation failure on {{ target_host }}
+      set_fact:
+        rotation_success: false
+        failed_rotations: >-
+          {{ failed_rotations + [ {
+            'host': target_host,
+            'strategy': rotation_item.rotation_strategy,
+            'msg': (ansible_failed_result.msg | default(ansible_failed_result.stderr | default('Unknown error')))
+          } ] }}

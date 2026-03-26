@@ -1,0 +1,15 @@
+- name: Validate APPS password
+  shell: |
+    source {{ EBS_ENV_FILE }}
+    sqlplus -s -L apps/{{ target_password }}@{{ DB_SID }} <<EOF
+    WHENEVER SQLERROR EXIT FAILURE
+    SET FEEDBACK OFF
+    SELECT 'VALID' FROM dual;
+    EXIT;
+    EOF
+  args:
+    executable: /bin/bash
+  register: apps_validation
+  changed_when: false
+  failed_when: apps_validation.rc != 0 or 'VALID' not in apps_validation.stdout
+  delegate_to: "{{ target_host }}"

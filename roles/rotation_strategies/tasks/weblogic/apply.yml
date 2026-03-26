@@ -1,0 +1,16 @@
+- name: Update WebLogic admin password
+  shell: |
+    source {{ EBS_ENV_FILE }}
+    perl $FND_TOP/patch/115/bin/txkUpdateEBSDomain.pl \
+      -action=updateAdminPassword \
+      -contextfile={{ CONTEXT_FILE }} \
+      -appsuser=apps \
+      -appspass={{ apps_password }} \
+      -weblogicpassword={{ weblogic_password }} \
+      -newweblogicpassword={{ target_password }}
+  args:
+    executable: /bin/bash
+  register: wls_pwd_change
+  no_log: true
+  failed_when: wls_pwd_change.rc != 0 or 'ORA-' in wls_pwd_change.stdout or 'ERROR' in wls_pwd_change.stdout
+  delegate_to: "{{ target_host }}"
