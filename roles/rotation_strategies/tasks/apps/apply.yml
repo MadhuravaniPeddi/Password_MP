@@ -23,7 +23,7 @@
   args:
     executable: /bin/bash
   register: apps_pwd_change
-  no_log: true
+#  no_log: true
   failed_when: apps_pwd_change.rc != 0 or 'ORA-' in apps_pwd_change.stdout or 'ERROR' in apps_pwd_change.stdout
   delegate_to: "{{ target_host }}"
 
