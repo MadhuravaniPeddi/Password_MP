@@ -4,8 +4,6 @@
   block:
     - name: Apply phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/apply.yml"
-      vars:
-        operation_type: "{{ operation_type | default('rotate') }}"
 
     - name: Post phase (only for rotate)
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/post.yml"
