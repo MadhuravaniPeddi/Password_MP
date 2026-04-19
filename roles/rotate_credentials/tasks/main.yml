@@ -14,11 +14,22 @@
       (
         rotation_item.apply_success == true and
         (
-          rotation_item.post_success == false or
           rotation_item.secretserver_success == false
         )
       )
     )
+  # when: >
+  #   (operation_type == 'rotate') or
+  #   (
+  #     operation_type == 'rollback' and
+  #     (
+  #       rotation_item.apply_success == true and
+  #       (
+  #         rotation_item.post_success == false or
+  #         rotation_item.secretserver_success == false
+  #       )
+  #     )
+  #   )
 
 - name: Add back items that were not processed
   set_fact:
