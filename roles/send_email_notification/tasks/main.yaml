@@ -34,9 +34,15 @@
           <tbody>
           {% for item in rotation_items %}
             {% set apply_ok = item.apply_success if item.apply_success is defined else item.password_success %}
-            {% set rotation_errors = item.rotation_errors if item.rotation_errors is defined else ( [{'msg': item.error_msg_password_applied}] if item.error_msg_password_applied else [] ) %}
-            {% set rollback_ok = item.rollback_success if item.rollback_success is defined else false %}
-            {% set rollback_errors = item.rollback_errors if item.rollback_errors is defined else ( item.failed_rollbacks if item.failed_rollbacks is defined else [] ) %}
+            {% set rotation_errors_list = item.rotation_errors | default([]) %}
+            {% if rotation_errors_list | length == 0 and item.error_msg_password_applied is defined %}
+              {% set rotation_errors_list = [{'msg': item.error_msg_password_applied}] %}
+            {% endif %}
+            {% set rollback_ok = item.rollback_success | default(false) %}
+            {% set rollback_errors_list = item.rollback_errors | default([]) %}
+            {% if rollback_errors_list | length == 0 and item.failed_rollbacks is defined %}
+              {% set rollback_errors_list = item.failed_rollbacks %}
+            {% endif %}
             <tr>
               <td>{{ item.group }}</td>
               <td>{{ groups[item.group] | join(', ') }}</td>
@@ -46,9 +52,9 @@
               {% endif %}
               <td>{{ apply_ok }}</td>
               <td>{{ item.secretserver_success }}</td>
-              <td>{{ rotation_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
+              <td>{{ rotation_errors_list | map(attribute='msg') | join('; ') | default('-') }}</td>
               <td>{{ rollback_ok }}</td>
-              <td>{{ rollback_errors | map(attribute='msg') | join('; ') | default('-') }}</td>
+              <td>{{ rollback_errors_list | map(attribute='msg') | join('; ') | default('-') }}</td>
               <td>
               <a href="{{ secret_server_base_url }}/app/#/secrets/{{ item.secret_details.secret_id }}/general"
                  target="_blank" style="text-decoration: none; color: #1a73e8;">
