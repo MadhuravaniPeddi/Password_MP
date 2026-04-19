@@ -54,9 +54,9 @@
           'user_details':        user_entry,
           'secret_details':      secret_details_dict,
           'dependent_passwords': dependent_passwords | default({}),
-          'apply_success': false
-          'post_success': false
-          'rollback_success': false
-          'rotation_success': false
-          'error_messages': []
+          'apply_success': false,
+          'post_success': false,
+          'rollback_success': false,
+          'rotation_success': false,
+          'error_messages': [],
         } ] }}
