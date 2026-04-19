@@ -1,0 +1,37 @@
+- name: Apply operation on {{ current_host }}
+  vars:
+    target_host: "{{ current_host }}"
+  block:
+    - name: Apply phase
+      include_tasks: "strategies/{{ rotation_item.user_details.type }}/apply.yml"
+      vars:
+        operation_type: "{{ operation_type | default('rotate') }}"
+
+    - name: Post phase (only for rotate)
+      include_tasks: "strategies/{{ rotation_item.user_details.type }}/post.yml"
+      when: operation_type | default('rotate') == 'rotate'
+
+    - name: Validate phase (only for rotate)
+      include_tasks: "strategies/{{ rotation_item.user_details.type }}/validate.yml"
+      when: operation_type | default('rotate') == 'rotate'
+
+  rescue:
+    - name: Record error during rotation
+      set_fact:
+        rotation_success: false
+        rotation_errors: >-
+          {{ rotation_errors + [ {
+              'host': current_host,
+              'msg': ansible_failed_result.msg | default('Unknown error')
+            } ] }}
+      when: operation_type | default('rotate') == 'rotate'
+
+    - name: Record error during rollback
+      set_fact:
+        rollback_success: false
+        rollback_errors: >-
+          {{ rollback_errors + [ {
+              'host': current_host,
+              'msg': ansible_failed_result.msg | default('Unknown error')
+            } ] }}
+      when: operation_type | default('rotate') == 'rollback'

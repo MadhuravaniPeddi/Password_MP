@@ -1,28 +1,35 @@
-- name: Initialize flags for {{ rotation_item.user_details.secret_name }} in {{ rotation_item.group }}
+- name: Initialize rotation flags (when operation is rotate)
   set_fact:
-    ebs_success: true
-    error_messages_ebs: []
+    rotation_success: true
+    rotation_errors: []
+  when: operation_type | default('rotate') == 'rotate'
 
-- name: Derive target password for {{ rotation_item.user_details.user }}
+- name: Initialize rollback flags (when operation is rollback)
   set_fact:
-    target_password: >-
-      {{
-        rotation_item.retrieved_password
-        if (operation_type | default('rotate')) == 'rollback'
-        else rotation_item.generated_password
-      }}
+    rollback_success: true
+    rollback_errors: []
+  when: operation_type | default('rotate') == 'rollback'
 
-- name: Rotate or rollback password on each host of {{ rotation_item.group }}
+- name: Process each host in {{ rotation_item.group }}
+  include_tasks: process_host.yml
   loop: "{{ groups[rotation_item.group] }}"
   loop_control:
-    loop_var: target_host
-  include_tasks: process_item.yml
+    loop_var: current_host
 
-- name: Append updated EBS rotation item
+- name: Append results for {{ rotation_item.user_details.user }} (rotate)
   set_fact:
     updated_items: >-
       {{ updated_items + [ rotation_item | combine({
-        'password_success': ebs_success,
-        'error_msg_ebs': (error_messages_ebs | join(' | ')),
-        'target_password': target_password
-      }) ] }}
+          'apply_success': rotation_success,
+          'rotation_errors': rotation_errors
+        }) ] }}
+  when: operation_type | default('rotate') == 'rotate'
+
+- name: Append results for {{ rotation_item.user_details.user }} (rollback)
+  set_fact:
+    updated_items: >-
+      {{ updated_items + [ rotation_item | combine({
+          'rollback_success': rollback_success,
+          'rollback_errors': rollback_errors
+        }) ] }}
+  when: operation_type | default('rotate') == 'rollback'
