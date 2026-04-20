@@ -16,20 +16,36 @@
   loop_control:
     loop_var: current_host
 
+# - name: Append results for {{ rotation_item.user_details.user }} (rotate)
+#   set_fact:
+#     processed_items: >-
+#       {{ processed_items + [ rotation_item | combine({
+#           'apply_success': rotation_success,
+#           'rotation_errors': rotation_errors
+#         }) ] }}
+#   when: operation_type | default('rotate') == 'rotate'
+
 - name: Append results for {{ rotation_item.user_details.user }} (rotate)
   set_fact:
     processed_items: >-
-      {{ processed_items + [ rotation_item | combine({
-          'apply_success': rotation_success,
-          'rotation_errors': rotation_errors
-        }) ] }}
+      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group) | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name) | list + [ processed_item ] }}
+  vars:
+    processed_item: "{{ rotation_item | combine({'apply_success': rotation_success, 'rotation_errors': rotation_errors}) }}"
   when: operation_type | default('rotate') == 'rotate'
+
+# - name: Append results for {{ rotation_item.user_details.user }} (rollback)
+#   set_fact:
+#     processed_items: >-
+#       {{ processed_items + [ rotation_item | combine({
+#           'rollback_success': rollback_success,
+#           'rollback_errors': rollback_errors
+#         }) ] }}
+#   when: operation_type | default('rotate') == 'rollback'
 
 - name: Append results for {{ rotation_item.user_details.user }} (rollback)
   set_fact:
     processed_items: >-
-      {{ processed_items + [ rotation_item | combine({
-          'rollback_success': rollback_success,
-          'rollback_errors': rollback_errors
-        }) ] }}
+      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group) | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name) | list + [ processed_item ] }}
+  vars:
+    processed_item: "{{ rotation_item | combine({'rollback_success': rollback_success, 'rollback_errors': rollback_errors}) }}"
   when: operation_type | default('rotate') == 'rollback'
