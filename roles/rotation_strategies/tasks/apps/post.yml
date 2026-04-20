@@ -70,4 +70,4 @@
     - name: Propagate failure to outer rescue
       fail:
         msg: "Post phase failed on {{ target_host }}"
-  when: rotation_item.apply_success | default(false) and operation_type == 'rotate'
+  when: rotation_item.apply_success | default(false)

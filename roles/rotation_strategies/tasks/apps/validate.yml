@@ -14,4 +14,4 @@
   changed_when: false
   failed_when: "'VALID' not in validation.stdout"
   delegate_to: "{{ target_host }}"
-  when: operation_type == 'rotate'
+#  when: operation_type == 'rotate'
