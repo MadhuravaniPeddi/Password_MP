@@ -10,7 +10,8 @@
 
     - name: Run AutoConfig on all application tier nodes
       shell: |
-        source {{ hostvars[target_host].EBS_ENV_FILE }}
+        cd /tmp
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
         {{ hostvars[target_host].ADMIN_SCRIPTS_HOME | default('$ADMIN_SCRIPTS_HOME') }}/adautocfg.sh
       args:
         executable: /bin/bash
@@ -21,7 +22,8 @@
 
     - name: Update WLS datasource password (run once on first node)
       shell: |
-        source {{ hostvars[target_host].EBS_ENV_FILE }}
+        cd /tmp
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
         perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl <<EOF
         updateDSPassword
         apps
@@ -38,7 +40,8 @@
       block:
         - name: Stop all services
           shell: |
-            source {{ hostvars[target_host].EBS_ENV_FILE }}
+            cd /tmp
+            source {{ hostvars[target_host].EBS_ENV_FILE }} run
             { echo "apps"; echo "{{ target_password }}"; echo "{{ system_password }}"; } | adstpall.sh apps@{{ hostvars[target_host].DB_SID }}
           args:
             executable: /bin/bash
@@ -47,7 +50,8 @@
 
         - name: Start all services
           shell: |
-            source {{ hostvars[target_host].EBS_ENV_FILE }}
+            cd /tmp
+            source {{ hostvars[target_host].EBS_ENV_FILE }} run
             { echo "apps"; echo "{{ target_password }}"; echo "{{ system_password }}"; } | adstrtal.sh apps@{{ hostvars[target_host].DB_SID }}
           args:
             executable: /bin/bash
@@ -66,5 +70,4 @@
     - name: Propagate failure to outer rescue
       fail:
         msg: "Post phase failed on {{ target_host }}"
-
-  when: rotation_item.apply_success | default(false)
+  when: rotation_item.apply_success | default(false) and operation_type == 'rotate'

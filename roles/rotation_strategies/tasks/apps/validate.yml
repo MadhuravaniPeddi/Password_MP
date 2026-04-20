@@ -1,6 +1,8 @@
+---
 - name: Validate APPS database login
   shell: |
-    source {{ hostvars[target_host].EBS_ENV_FILE }}
+    cd /tmp
+    source {{ hostvars[target_host].EBS_ENV_FILE }} run
     sqlplus -s apps/{{ target_password }}@{{ hostvars[target_host].DB_SID }} <<EOF
     set heading off feedback off
     select 'VALID' from dual;
@@ -12,4 +14,4 @@
   changed_when: false
   failed_when: "'VALID' not in validation.stdout"
   delegate_to: "{{ target_host }}"
-#  when: operation_type == 'rotate'
+  when: operation_type == 'rotate'

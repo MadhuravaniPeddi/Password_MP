@@ -1,3 +1,4 @@
+---
 - name: Ensure SYSTEM password is available
   assert:
     that:
@@ -11,15 +12,11 @@
     appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
     system_password: "{{ rotation_item.dependent_passwords.system_password }}"
 
-- name: Change APPS password using AFPASSWD
+- name: Change APPS password using FNDCPASS
   shell: |
-    source {{ hostvars[target_host].EBS_ENV_FILE }}
-    {
-      printf '%s\n' "{{ appsuser_password }}"
-      printf '%s\n' "{{ system_password }}"
-      printf '%s\n' "{{ target_password }}"
-      printf '%s\n' "{{ target_password }}"
-    } | AFPASSWD -c apps@{{ hostvars[target_host].DB_SID }} -s APPLSYS
+    cd /tmp
+    source {{ hostvars[target_host].EBS_ENV_FILE }} run
+    FNDCPASS apps/{{ appsuser_password }} 0 Y system/{{ system_password }} SYSTEM APPLSYS {{ target_password }}
   args:
     executable: /bin/bash
   register: apps_pwd_change
@@ -27,7 +24,7 @@
   failed_when: apps_pwd_change.rc != 0 or 'ORA-' in apps_pwd_change.stdout or 'ERROR' in apps_pwd_change.stdout
   delegate_to: "{{ target_host }}"
   become: yes
-  become_user: "{{ hostvars[target_host].ebs_owner | default('oracle') }}"
+  become_user: "{{ hostvars[target_host].ebs_owner }}"
 
 - name: Mark apply success
   set_fact:
