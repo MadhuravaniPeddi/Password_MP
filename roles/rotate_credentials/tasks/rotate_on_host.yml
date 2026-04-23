@@ -34,9 +34,9 @@
 # -----------------------------------------------------------------------------
 - name: Compute overall success for rotate operation
   set_fact:
-    overall_apply_success: "{{ processed_hosts | map(attribute='apply_success') | list is all(true) }}"
-    overall_post_success: "{{ processed_hosts | map(attribute='post_success') | list is all(true) }}"
-    overall_validate_success: "{{ processed_hosts | map(attribute='validate_success') | list is all(true) }}"
+    overall_apply_success: "{{ processed_hosts | map(attribute='apply_success') | list is all }}"
+    overall_post_success: "{{ processed_hosts | map(attribute='post_success') | list is all }}"
+    overall_validate_success: "{{ processed_hosts | map(attribute='validate_success') | list is all }}"
     all_rotation_errors: "{{ processed_hosts | map(attribute='rotation_errors') | list | flatten }}"
   when: operation_type | default('rotate') == 'rotate'
 
@@ -73,9 +73,9 @@
 # -----------------------------------------------------------------------------
 - name: Compute overall success for rollback operation
   set_fact:
-    overall_apply_success_rollback: "{{ processed_hosts | map(attribute='apply_success') | list is all(true) }}"
-    overall_post_success_rollback: "{{ processed_hosts | map(attribute='post_success') | list is all(true) }}"
-    overall_validate_success_rollback: "{{ processed_hosts | map(attribute='validate_success') | list is all(true) }}"
+    overall_apply_success_rollback: "{{ processed_hosts | map(attribute='apply_success') | list is all }}"
+    overall_post_success_rollback: "{{ processed_hosts | map(attribute='post_success') | list is all }}"
+    overall_validate_success_rollback: "{{ processed_hosts | map(attribute='validate_success') | list is all }}"
     # For rollback we may not have post/validate – but we still capture them
     overall_rollback_success: "{{ processed_hosts | map(attribute='rollback_success') | list is all(true) }}"
     all_rollback_errors: "{{ processed_hosts | map(attribute='rollback_errors') | list | flatten }}"
