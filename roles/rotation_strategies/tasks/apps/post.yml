@@ -5,7 +5,7 @@
         target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
         appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
         system_password: "{{ rotation_item.dependent_passwords.system_password }}"
-        weblogic_admin_password: "{{ rotation_item.dependent_passwords.weblogic_password }}"
+        weblogic_password: "{{ rotation_item.dependent_passwords.weblogic_password }}"
 
     - name: Determine app tier hosts (multi‑node or single‑node)
       set_fact:
