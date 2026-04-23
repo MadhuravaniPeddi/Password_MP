@@ -1,4 +1,10 @@
 ---
+- name: Derive passwords
+  set_fact:
+    target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
+    appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
+    system_password: "{{ rotation_item.dependent_passwords.system_password }}"
+    
 - name: Validate APPS database login
   shell: |
     cd /tmp
@@ -14,4 +20,17 @@
   changed_when: false
   failed_when: "'VALID' not in validation.stdout"
   delegate_to: "{{ target_host }}"
+  rescue:
+    - name: Record validation failure
+      set_fact:
+        validate_success: false
+        validate_errors: "{{ validate_errors + [ansible_failed_result.msg | default('Validation failed: login unsuccessful')] }}"
+    - name: Propagate failure
+      fail:
+        msg: "Validate phase failed on {{ target_host }}"
+  always:
+    - name: Mark validate success if no failure
+      set_fact:
+        validate_success: true
+      when: validation is defined and 'VALID' in validation.stdout
 #  when: operation_type == 'rotate'

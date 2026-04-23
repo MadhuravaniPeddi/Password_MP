@@ -1,3 +1,10 @@
+# rotate_on_host.yml – processes all hosts in a group for a single rotation item
+# Expected variables from caller:
+#   - rotation_item       : the current rotation item (immutable loop variable)
+#   - processed_items     : global list that will accumulate results for all rotation items
+#   - operation_type      : 'rotate' or 'rollback'
+#   - groups              : inventory groups (provided by Ansible)
+
 - name: Initialize rotation flags (when operation is rotate)
   set_fact:
     rotation_success: true
@@ -10,28 +17,81 @@
     rollback_errors: []
   when: operation_type | default('rotate') == 'rollback'
 
+- name: Initialize list to collect per‑host results
+  set_fact:
+    processed_hosts: []
+
 - name: Process each host in {{ rotation_item.group }}
   include_tasks: process_host.yml
   loop: "{{ groups[rotation_item.group] }}"
   loop_control:
     loop_var: current_host
 
+
+
+# -----------------------------------------------------------------------------
+# Aggregate per‑host results for ROTATE operation
+# -----------------------------------------------------------------------------
+- name: Compute overall success for rotate operation
+  set_fact:
+    overall_apply_success: "{{ processed_hosts | map(attribute='apply_success') | list is all(true) }}"
+    overall_post_success: "{{ processed_hosts | map(attribute='post_success') | list is all(true) }}"
+    overall_validate_success: "{{ processed_hosts | map(attribute='validate_success') | list is all(true) }}"
+    all_rotation_errors: "{{ processed_hosts | map(attribute='rotation_errors') | list | flatten }}"
+  when: operation_type | default('rotate') == 'rotate'
+
 # - name: Append results for {{ rotation_item.user_details.user }} (rotate)
 #   set_fact:
 #     processed_items: >-
-#       {{ processed_items + [ rotation_item | combine({
-#           'apply_success': rotation_success,
-#           'rotation_errors': rotation_errors
-#         }) ] }}
+#       {{ processed_items | rejectattr('group', 'equalto', rotation_item.group) | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name) | list + [ processed_item ] }}
+#   vars:
+#     processed_item: "{{ rotation_item | combine({'apply_success': rotation_success, 'rotation_errors': rotation_errors}) }}"
 #   when: operation_type | default('rotate') == 'rotate'
+
+- name: Build final processed_item for rotate
+  set_fact:
+    processed_item: "{{ rotation_item | combine({
+      'apply_success': overall_apply_success,
+      'post_success': overall_post_success,
+      'validate_success': overall_validate_success,
+      'rotation_success': overall_apply_success and overall_post_success and overall_validate_success,
+      'rotation_errors': all_rotation_errors,
+      'host_results': processed_hosts
+    }) }}"
+  when: operation_type | default('rotate') == 'rotate'
 
 - name: Append results for {{ rotation_item.user_details.user }} (rotate)
   set_fact:
     processed_items: >-
-      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group) | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name) | list + [ processed_item ] }}
-  vars:
-    processed_item: "{{ rotation_item | combine({'apply_success': rotation_success, 'rotation_errors': rotation_errors}) }}"
+      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group)
+                        | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name)
+                        | list + [processed_item] }}
   when: operation_type | default('rotate') == 'rotate'
+
+# -----------------------------------------------------------------------------
+# Aggregate per‑host results for ROLLBACK operation
+# -----------------------------------------------------------------------------
+- name: Compute overall success for rollback operation
+  set_fact:
+    overall_apply_success_rollback: "{{ processed_hosts | map(attribute='apply_success') | list is all(true) }}"
+    overall_post_success_rollback: "{{ processed_hosts | map(attribute='post_success') | list is all(true) }}"
+    overall_validate_success_rollback: "{{ processed_hosts | map(attribute='validate_success') | list is all(true) }}"
+    # For rollback we may not have post/validate – but we still capture them
+    overall_rollback_success: "{{ processed_hosts | map(attribute='rollback_success') | list is all(true) }}"
+    all_rollback_errors: "{{ processed_hosts | map(attribute='rollback_errors') | list | flatten }}"
+  when: operation_type | default('rotate') == 'rollback'
+
+- name: Build final processed_item for rollback
+  set_fact:
+    processed_item: "{{ rotation_item | combine({
+      'apply_success': overall_apply_success_rollback,
+      'post_success': overall_post_success_rollback,
+      'validate_success': overall_validate_success_rollback,
+      'rollback_success': overall_rollback_success,
+      'rollback_errors': all_rollback_errors,
+      'host_results': processed_hosts
+    }) }}"
+  when: operation_type | default('rotate') == 'rollback'
 
 # - name: Append results for {{ rotation_item.user_details.user }} (rollback)
 #   set_fact:
@@ -45,7 +105,7 @@
 - name: Append results for {{ rotation_item.user_details.user }} (rollback)
   set_fact:
     processed_items: >-
-      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group) | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name) | list + [ processed_item ] }}
-  vars:
-    processed_item: "{{ rotation_item | combine({'rollback_success': rollback_success, 'rollback_errors': rollback_errors}) }}"
+      {{ processed_items | rejectattr('group', 'equalto', rotation_item.group)
+                        | rejectattr('user_details.secret_name', 'equalto', rotation_item.user_details.secret_name)
+                        | list + [processed_item] }}
   when: operation_type | default('rotate') == 'rollback'

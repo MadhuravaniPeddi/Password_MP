@@ -28,12 +28,14 @@
 
   - name: Mark apply success
     set_fact:
-      rotation_item: "{{ rotation_item | combine({'apply_success': true}) }}"
+      apply_success: true
 
   rescue:
     - name: Set apply_success false and record error
       set_fact:
-        rotation_item: "{{ rotation_item | combine({'apply_success': false, 'apply_error': ansible_failed_result.msg | default('Unknown error')}) }}"
+#        rotation_item: "{{ rotation_item | combine({'apply_success': false, 'apply_error': ansible_failed_result.msg | default('Unknown error')}) }}"
+        apply_success: false
+        apply_errors: "{{ apply_errors + [ansible_failed_result.msg | default('Unknown apply error')] }}"
     - name: Propagate failure to outer rescue
       fail:
         msg: "Apply phase failed: {{ rotation_item.apply_error }}"

@@ -1,5 +1,11 @@
 ---
 - block:
+    - name: Derive passwords
+      set_fact:
+        target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
+        appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
+        system_password: "{{ rotation_item.dependent_passwords.system_password }}"
+
     - name: Determine app tier hosts (multi‑node or single‑node)
       set_fact:
         app_tier_hosts: >-
@@ -61,12 +67,14 @@
 
     - name: Mark post success
       set_fact:
-        rotation_item: "{{ rotation_item | combine({'post_success': true}) }}"
+        post_success: false
 
   rescue:
     - name: Capture post failure
       set_fact:
-        rotation_item: "{{ rotation_item | combine({'post_success': false, 'error_messages': rotation_item.error_messages | default([]) + ['Post phase failed']}) }}"
+#        rotation_item: "{{ rotation_item | combine({'post_success': false, 'error_messages': rotation_item.error_messages | default([]) + ['Post phase failed']}) }}"
+        post_success: false
+        post_errors: "{{ post_errors + [ansible_failed_result.msg | default('Unknown apply error')] }}"
     - name: Propagate failure to outer rescue
       fail:
         msg: "Post phase failed on {{ target_host }}"

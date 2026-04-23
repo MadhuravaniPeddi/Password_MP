@@ -1,20 +1,38 @@
+# process_host.yml – processes a single host for a given rotation_item
+# Expected variables from caller:
+#   - rotation_item   : the current rotation item (immutable loop variable)
+#   - current_host    : the target host IP/hostname
+#   - operation_type  : 'rotate' or 'rollback'
+#   - processed_hosts : a list defined in the caller (initially empty) that will collect results
+
+- name: Initialize phase outcome variables for {{ current_host }}
+  set_fact:
+    # Phase‑specific flags (common to both operations)
+    apply_success: false
+    apply_errors: []
+    post_success: false
+    post_errors: []
+    validate_success: false
+    validate_errors: []
+    # Rotate‑specific overall flags
+    rotation_success: true
+    rotation_errors: []
+    # Rollback‑specific overall flags
+    rollback_success: true
+    rollback_errors: []
+
 - name: Apply operation on {{ current_host }}
   vars:
     target_host: "{{ current_host }}"
   block:
     - name: Apply phase
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/apply.yml"
-    
-    - name: Set apply_success true
-      set_fact:
-        rotation_item: "{{ rotation_item | combine({'apply_success': true}) }}"
 
-    - name: Post phase
+    - name: Post phase (only for rotate)
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/post.yml"
 
-    - name: Validate phase
+    - name: Validate phase (only for rotate)
       include_tasks: "roles/rotation_strategies/tasks/{{ rotation_item.user_details.type }}/validate.yml"
-
   rescue:
     - name: Record error during rotation
       set_fact:
@@ -22,7 +40,13 @@
         rotation_errors: >-
           {{ rotation_errors + [ {
               'host': current_host,
-              'msg': ansible_failed_result.msg | default('Unknown error')
+              'msg': ansible_failed_result.msg | default('Unknown error'),
+              'apply_success': apply_success,
+              'apply_errors': apply_errors,
+              'post_success': post_success,
+              'post_errors': post_errors,
+              'validate_success': validate_success,
+              'validate_errors': validate_errors
             } ] }}
       when: operation_type | default('rotate') == 'rotate'
 
@@ -32,6 +56,34 @@
         rollback_errors: >-
           {{ rollback_errors + [ {
               'host': current_host,
-              'msg': ansible_failed_result.msg | default('Unknown error')
+              'msg': ansible_failed_result.msg | default('Unknown error'),
+              'apply_success': apply_success,
+              'apply_errors': apply_errors,
+              'post_success': post_success,
+              'post_errors': post_errors,
+              'validate_success': validate_success,
+              'validate_errors': validate_errors
             } ] }}
       when: operation_type | default('rotate') == 'rollback'
+
+  always:
+    - name: Build final per‑host item
+      set_fact:
+        processed_host_item: >-
+          {{ rotation_item | combine({
+            'target_host': current_host,
+            'apply_success': apply_success,
+            'apply_errors': apply_errors,
+            'post_success': post_success,
+            'post_errors': post_errors,
+            'validate_success': validate_success,
+            'validate_errors': validate_errors,
+            'rotation_success': rotation_success,
+            'rotation_errors': rotation_errors,
+            'rollback_success': rollback_success,
+            'rollback_errors': rollback_errors
+          }) }}
+
+    - name: Append to global processed_hosts list
+      set_fact:
+        processed_hosts: "{{ processed_hosts | default([]) + [processed_host_item] }}"
