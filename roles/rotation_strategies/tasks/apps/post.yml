@@ -67,7 +67,7 @@
 
     - name: Mark post success
       set_fact:
-        post_success: false
+        post_success: true
 
   rescue:
     - name: Capture post failure
