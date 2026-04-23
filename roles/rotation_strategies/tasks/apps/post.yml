@@ -39,7 +39,7 @@
         executable: /bin/bash
       register: ds_update
       failed_when: ds_update.rc != 0
-      delegate_to: "{{ app_tier_hosts[0] }}"
+      delegate_to: "{{ target_host }}"
       run_once: true
 
     - name: Restart application services (optional)
