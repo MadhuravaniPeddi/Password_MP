@@ -24,6 +24,10 @@
     become: yes
     become_user: "{{ hostvars[target_host].ebs_owner }}"
 
+  - name: Mark validate success
+    set_fact:
+      validate_success: true
+
   rescue:
     - name: Record validation failure
       set_fact:
