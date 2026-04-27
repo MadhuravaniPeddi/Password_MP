@@ -21,6 +21,9 @@
     changed_when: false
     failed_when: "'VALID' not in validation.stdout"
     delegate_to: "{{ target_host }}"
+    become: yes
+    become_user: "{{ hostvars[target_host].ebs_owner }}"
+
   rescue:
     - name: Record validation failure
       set_fact:
