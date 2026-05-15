@@ -1,0 +1,95 @@
+---
+- block:
+    - name: Derive passwords
+      set_fact:
+        target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
+        appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
+        system_password: "{{ rotation_item.dependent_passwords.system_password }}"
+        weblogic_admin_password: "{{ rotation_item.dependent_passwords.weblogic_admin_password }}"
+    
+    - name: Determine app tier hosts (list, group, multi‑node or single‑node)
+      set_fact:
+        app_tier_hosts: >-
+          {{
+            (hostvars[target_host].app_tier_group | type_debug == 'list')
+            | ternary(
+                hostvars[target_host].app_tier_group,
+                groups[hostvars[target_host].app_tier_group]
+                if hostvars[target_host].app_tier_group is string
+                and hostvars[target_host].app_tier_group in groups
+                else [target_host]
+            )
+          }}
+
+    - name: Run AutoConfig on all application tier nodes
+      expect:
+        timeout: 3600
+        chdir: /tmp
+        command: |
+          /bin/bash -c "
+            source {{ hostvars[target_host].EBS_ENV_FILE }} run
+            {{ hostvars[target_host].ADMIN_SCRIPTS_HOME | default('$ADMIN_SCRIPTS_HOME') }}/adautocfg.sh
+          "
+        responses:
+          "Enter the APPS user password:": "{{ target_password }}"
+      register: autoconfig_result
+      failed_when: autoconfig_result.rc != 0
+      delegate_to: "{{ item }}"
+      loop: "{{ app_tier_hosts }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
+
+#      no_log: true
+
+    - name: Update APPS password in WLS Data Source (using expect)
+      expect:
+        timeout: 600
+        chdir: /tmp
+        command: |
+          /bin/bash -c "
+            source {{ hostvars[target_host].EBS_ENV_FILE }} run
+            perl $FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
+          "
+        responses:
+          # Menu prompt – send the exact choice
+          "Enter Your Choice :": "updateDSPassword"
+          # Context file prompt – accept default by sending empty line (just a newline)
+          "Enter the full path of Applications Context File.*:": ""
+          # WebLogic AdminServer password
+          "Enter weblogic admin server password:": "{{ weblogic_admin_password }}"
+          # New APPS user password
+          "Enter the APPS user password:": "{{ target_password }}"
+      register: ds_update
+      failed_when: ds_update.rc != 0 or "ERROR" in ds_update.stdout
+      delegate_to: "{{ target_host }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
+#      no_log: true
+
+    - name: Start all services
+      shell: |
+        cd /tmp
+        source {{ hostvars[target_host].EBS_ENV_FILE }} run
+        { echo "apps"; echo "{{ target_password }}"; echo "{{ system_password }}"; } | adstrtal.sh apps@{{ hostvars[target_host].DB_SID }}
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ item }}"
+      become: yes
+      become_user: "{{ hostvars[target_host].ebs_owner }}"
+      loop: "{{ app_tier_hosts }}"
+      when: restart_services | default(false)
+
+    - name: Mark post success
+      set_fact:
+        post_success: true
+
+  rescue:
+    - name: Capture post failure
+      set_fact:
+#        rotation_item: "{{ rotation_item | combine({'post_success': false, 'error_messages': rotation_item.error_messages | default([]) + ['Post phase failed']}) }}"
+        post_success: false
+        post_errors: "{{ post_errors + [ansible_failed_result.msg | default('Unknown apply error')] }}"
+    - name: Propagate failure to outer rescue
+      fail:
+        msg: "Post phase failed on {{ target_host }}"
+  when: apply_success | default(false)

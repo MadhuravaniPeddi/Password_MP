@@ -1,0 +1,67 @@
+- block:
+  - name: Ensure SYSTEM password is available
+    assert:
+      that:
+        - rotation_item.dependent_passwords.system_password is defined
+        - rotation_item.dependent_passwords.system_password | length > 0
+      fail_msg: "SYSTEM password missing for APPS rotation item {{ rotation_item.user_details.secret_name }}"
+
+  - name: Derive passwords
+    set_fact:
+      target_password: "{{ rotation_item.generated_password if operation_type == 'rotate' else rotation_item.retrieved_password }}"
+      appsuser_password: "{{ rotation_item.retrieved_password if operation_type == 'rotate' else rotation_item.generated_password }}"
+      system_password: "{{ rotation_item.dependent_passwords.system_password }}"
+
+
+  - name: Determine app tier hosts (list, group, multi‑node or single‑node)
+    set_fact:
+      app_tier_hosts: >-
+        {{
+          (hostvars[target_host].app_tier_group | type_debug == 'list')
+          | ternary(
+              hostvars[target_host].app_tier_group,
+              groups[hostvars[target_host].app_tier_group]
+              if hostvars[target_host].app_tier_group is string
+              and hostvars[target_host].app_tier_group in groups
+              else [target_host]
+          )
+        }}
+        
+  - name: Stop all services
+    shell: |
+      cd /tmp
+      source {{ hostvars[target_host].EBS_ENV_FILE }} run
+      { echo "apps"; echo "{{ target_password }}"; echo "{{ system_password }}"; } | adstpall.sh apps@{{ hostvars[target_host].DB_SID }}
+    args:
+      executable: /bin/bash
+    delegate_to: "{{ item }}"
+    loop: "{{ app_tier_hosts }}"
+    when: restart_services | default(false)
+
+  - name: Change APPS password using FNDCPASS
+    shell: |
+      cd /tmp
+      source {{ hostvars[target_host].EBS_ENV_FILE }} run
+      FNDCPASS apps/{{ appsuser_password }} 0 Y system/{{ system_password }} SYSTEM APPLSYS {{ target_password }}
+    args:
+      executable: /bin/bash
+    register: apps_pwd_change
+  #  no_log: true
+    failed_when: apps_pwd_change.rc != 0 or 'ORA-' in apps_pwd_change.stdout or 'ERROR' in apps_pwd_change.stdout
+    delegate_to: "{{ target_host }}"
+    become: yes
+    become_user: "{{ hostvars[target_host].ebs_owner }}"
+
+  - name: Mark apply success
+    set_fact:
+      apply_success: true
+
+  rescue:
+    - name: Set apply_success false and record error
+      set_fact:
+#        rotation_item: "{{ rotation_item | combine({'apply_success': false, 'apply_error': ansible_failed_result.msg | default('Unknown error')}) }}"
+        apply_success: false
+        apply_errors: "{{ apply_errors + [ansible_failed_result.msg | default('Unknown apply error')] }}"
+    - name: Propagate failure to outer rescue
+      fail:
+        msg: "Apply phase failed: {{ rotation_item.apply_error }}"
