@@ -1,20 +1,57 @@
-- name: Validate WebLogic login
-  shell: |
-    source {{ EBS_ENV_FILE }}
-    WLST=$FMW_HOME/oracle_common/common/bin/wlst.sh
+# roles/rotation_strategies/tasks/weblogic/validate.yml
 
-    $WLST <<EOF
-    try:
-        connect('weblogic','{{ target_password }}','{{ admin_url }}')
-        print('VALID')
-        disconnect()
-    except:
-        print('INVALID')
-        exit()
-    EOF
-  args:
-    executable: /bin/bash
-  register: wls_validation
-  changed_when: false
-  failed_when: wls_validation.rc != 0 or 'VALID' not in wls_validation.stdout
-  delegate_to: "{{ target_host }}"
+---
+- block:
+
+    - name: Derive validation password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+    - name: Validate WebLogic login using WLST
+      shell: |
+        . {{ rotation_item.user_details.run_env }}
+
+        $FMW_HOME/oracle_common/common/bin/wlst.sh <<EOF > /tmp/wls_validate.log
+        try:
+            connect(
+                'weblogic',
+                '{{ target_password }}',
+                '{{ rotation_item.user_details.admin_url }}'
+            )
+            print('VALID')
+            disconnect()
+        except:
+            print('INVALID')
+            exit()
+        EOF
+
+        cat /tmp/wls_validate.log
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      register: weblogic_validate_result
+      changed_when: false
+      failed_when: "'VALID' not in weblogic_validate_result.stdout"
+
+    - name: Mark validation success
+      set_fact:
+        validate_success: true
+
+  rescue:
+
+    - name: Mark validation failure
+      set_fact:
+        validate_success: false
+        validate_errors: >-
+          {{
+            validate_errors | default([])
+            + [ansible_failed_result.msg | default('WebLogic validation failed')]
+          }}
+
+    - fail:
+        msg: "WebLogic validation failed"

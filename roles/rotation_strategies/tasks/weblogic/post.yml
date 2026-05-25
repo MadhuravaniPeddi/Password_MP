@@ -1,0 +1,27 @@
+- block:
+
+    - name: Restart application tier services
+      shell: |
+        . {{ rotation_item.user_details.run_env }}
+
+        $ADMIN_SCRIPTS_HOME/adstrtal.sh
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      register: weblogic_restart_result
+      failed_when: weblogic_restart_result.rc != 0
+
+    - name: Mark post success
+      set_fact:
+        post_success: true
+
+  rescue:
+
+    - name: Mark post failure
+      set_fact:
+        post_success: false
+        post_errors: >-
+          {{
+            post_errors | default([])
+            + [ansible_failed_result.msg | default('WebLogic post failed')]
+          }}

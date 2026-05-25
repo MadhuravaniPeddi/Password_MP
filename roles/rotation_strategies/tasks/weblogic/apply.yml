@@ -1,16 +1,64 @@
-- name: Update WebLogic admin password
-  shell: |
-    source {{ EBS_ENV_FILE }}
-    perl $FND_TOP/patch/115/bin/txkUpdateEBSDomain.pl \
-      -action=updateAdminPassword \
-      -contextfile={{ CONTEXT_FILE }} \
-      -appsuser=apps \
-      -appspass={{ apps_password }} \
-      -weblogicpassword={{ weblogic_password }} \
-      -newweblogicpassword={{ target_password }}
-  args:
-    executable: /bin/bash
-  register: wls_pwd_change
-  no_log: true
-  failed_when: wls_pwd_change.rc != 0 or 'ORA-' in wls_pwd_change.stdout or 'ERROR' in wls_pwd_change.stdout
-  delegate_to: "{{ target_host }}"
+- block:
+
+    - name: Derive target password
+      set_fact:
+        target_password: >-
+          {{
+            rotation_item.generated_password
+            if operation_type == 'rotate'
+            else rotation_item.retrieved_password
+          }}
+
+        previous_password: >-
+          {{
+            rotation_item.retrieved_password
+            if operation_type == 'rotate'
+            else rotation_item.generated_password
+          }}
+
+    - name: Start Admin Server
+      shell: |
+        . {{ rotation_item.user_details.run_env }}
+
+        $ADMIN_SCRIPTS_HOME/adadminsrvctl.sh start
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ target_host }}"
+      register: admin_server_start
+      failed_when: admin_server_start.rc != 0
+
+    - name: Update WebLogic password
+      expect:
+        command: >
+          perl $FND_TOP/patch/115/bin/txkUpdateEBSDomain.pl
+          -action=updateAdminPassword
+        responses:
+          '.*Enter "Yes" to proceed.*': 'Yes'
+          '.*Applications Context File.*': "{{ rotation_item.user_details.context_file }}"
+          '.*Enter the WLS Admin Password:.*': "{{ previous_password }}"
+          '.*Enter the new WLS Admin Password:.*': "{{ target_password }}"
+          '.*Enter the APPS user password:.*': "{{ rotation_item.dependent_passwords.apps_password }}"
+        timeout: 1800
+      environment:
+        CONTEXT_FILE: "{{ rotation_item.user_details.context_file }}"
+      delegate_to: "{{ target_host }}"
+      register: weblogic_password_change
+      failed_when: weblogic_password_change.rc != 0
+
+    - name: Mark apply success
+      set_fact:
+        apply_success: true
+
+  rescue:
+
+    - name: Mark apply failure
+      set_fact:
+        apply_success: false
+        apply_errors: >-
+          {{
+            apply_errors | default([])
+            + [ansible_failed_result.msg | default('WebLogic apply failed')]
+          }}
+
+    - fail:
+        msg: "WebLogic apply failed"
