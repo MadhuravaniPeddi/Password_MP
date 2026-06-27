@@ -1,34 +1,29 @@
-- name: Retrieve group_name from hostvars if missing
+---
+- name: Get APPS user details
   set_fact:
-    group_name: "{{ group_name | default(hostvars[inventory_hostname].global_group_name, true) }}"
+    apps_user: >-
+      {{
+        hostvars[target_host].users
+        | selectattr('user', 'equalto', 'APPS')
+        | first
+      }}
 
-- name: Debug - Check if group_name is received in update_secret_server
-  debug:
-    msg: "Received group_name: {{ group_name | default('NOT RECEIVED') }}"
-
-- name: Store group_name globally before calling update_secret_server
+- name: Resolve generated password from OLAM
   set_fact:
-    global_group_name: "{{ group_name }}"
+    final_password: >-
+      {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
 
-- name: Store secret_name globally before updating Secret Server
-  set_fact:
-    global_secret_name: "{{ user_details.secret_name }}"
-
-- name: Debug - Show values before updating Secret Server
-  debug:
-    msg: "Updating Secret Server - Group: {{ global_group_name }}, Secret: {{ global_secret_name }}"
-
-- name: Update password in Secret Server for each group
+- name: Update password in Secret Server
   include_role:
     name: update_password
   vars:
-    secret_name: "{{ global_secret_name }}"
-    final_password: "{{ final_pwd }}"
-    secret_id: "{{ found_secret_id }}"
-    group_name: "{{ global_group_name }}"
+    group_name: "{{ group_name }}"
+    secret_name: "{{ apps_user.secret_name }}"
+    secret_id: "{{ apps_user.secret_id }}"
+    final_password: "{{ final_password }}"
 
-- name: Send Email Notification
-  include_role:
-    name: send_email_notification
-  vars:
-    group_name: "{{ global_group_name }}"
+# - name: Send Email Notification
+#   include_role:
+#     name: send_email_notification
+#   vars:
+#     group_name: "{{ group_name }}"
