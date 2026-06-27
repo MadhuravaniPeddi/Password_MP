@@ -1,5 +1,4 @@
 ---
-Primary: true
 EBS_ENV_FILE: "/u01/app/oracle/EBSTRGT/EBSapps.env"
 DB_SID: "EBSTRGT"
 ebs_owner: "appl1229"
@@ -11,7 +10,7 @@ olam_fields:
   system_pass: EBS_TGT_SYSTEM_PASS
   weblogic_pass: EBS_TGT_WEBLOGIC_PASS
 
-app_tier_group: "ebs_app_nonprod"
+
 users:
   - secret_name: "APPS_NONPROD"
     type: "apps_vamshi"
