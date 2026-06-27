@@ -1,0 +1,3 @@
+APP_ENV: "EBSapps.env"
+APP_BASE: "/u01/app/oracle/EBSTRGT"
+OLAM_USER: "admin"
