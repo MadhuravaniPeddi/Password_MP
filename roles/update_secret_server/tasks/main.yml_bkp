@@ -1,0 +1,25 @@
+---
+- name: Initialize updated_items
+  set_fact:
+    updated_items: []
+
+- name: Update successful groups
+  include_tasks: secret_update.yml
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: rotation_item
+  when:
+    - rotation_item.password_success | default(false)
+
+- name: Keep failed groups unchanged
+  set_fact:
+    updated_items: "{{ updated_items + [rotation_item] }}"
+  loop: "{{ password_rotation_items }}"
+  loop_control:
+    loop_var: rotation_item
+  when:
+    - not (rotation_item.password_success | default(false))
+
+- name: Update global variable
+  set_fact:
+    password_rotation_items: "{{ updated_items }}"
