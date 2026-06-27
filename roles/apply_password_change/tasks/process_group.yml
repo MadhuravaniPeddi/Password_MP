@@ -1,4 +1,12 @@
 ---
+- name: Debug primary variable
+  debug:
+    msg:
+      - "Host={{ item }}"
+      - "primary={{ hostvars[item].primary | default('NOT_DEFINED') }}"
+      - "vars={{ hostvars[item] }}"
+  loop: "{{ groups[group_name] }}"
+  
 - name: Find primary host in {{ group_name }}
   set_fact:
     target_host: "{{ item }}"
