@@ -71,4 +71,6 @@
         TGT_APPS_PASS_GEN: "{{ TGT_APPS_PASS_GEN | default('') }}"
     status_code: 200
   register: update_result
+  delegate_to: localhost
+  run_once: yes
   ignore_errors: yes
