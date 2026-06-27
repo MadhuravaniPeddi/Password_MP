@@ -17,21 +17,21 @@
   ignore_errors: yes
 
 - name: Log stop services output
-  copy:
-    content: |
-      ============================================
-      STOP SERVICES - {{ current_date }}
-      ============================================
-      STDOUT:
-      {{ stop_services_result.stdout }}
+  shell: |
+    cat >> {{ stop_services_log }} << 'EOF'
+    ============================================
+    STOP SERVICES - {{ current_date }}
+    ============================================
+    STDOUT:
+    {{ stop_services_result.stdout }}
 
-      STDERR:
-      {{ stop_services_result.stderr }}
+    STDERR:
+    {{ stop_services_result.stderr }}
 
-      Return Code: {{ stop_services_result.rc }}
-      ============================================
+    Return Code: {{ stop_services_result.rc }}
+    ============================================
 
-    dest: "{{ stop_services_log }}"
+    EOF
   when: stop_services_result is defined
 
 - name: Check if services stopped successfully
@@ -61,22 +61,21 @@
   when: services_stopped
 
 - name: Log process check output
-  copy:
-    content: |
-      ============================================
-      PROCESS CHECK - {{ current_date }}
-      ============================================
-      STDOUT:
-      {{ process_check.stdout }}
+  shell: |
+    cat >> {{ stop_services_log }} << 'EOF'
+    ============================================
+    PROCESS CHECK - {{ current_date }}
+    ============================================
+    STDOUT:
+    {{ process_check.stdout }}
 
-      STDERR:
-      {{ process_check.stderr }}
+    STDERR:
+    {{ process_check.stderr }}
 
-      Return Code: {{ process_check.rc }}
-      ============================================
+    Return Code: {{ process_check.rc }}
+    ============================================
 
-    dest: "{{ stop_services_log }}"
-    append: yes
+    EOF
   when: process_check is defined
 
 - name: Kill remaining EBS processes
@@ -89,22 +88,21 @@
     - process_check.stdout | trim != ""
 
 - name: Log kill processes output
-  copy:
-    content: |
-      ============================================
-      KILL PROCESSES - {{ current_date }}
-      ============================================
-      STDOUT:
-      {{ kill_result.stdout }}
+  shell: |
+    cat >> {{ stop_services_log }} << 'EOF'
+    ============================================
+    KILL PROCESSES - {{ current_date }}
+    ============================================
+    STDOUT:
+    {{ kill_result.stdout }}
 
-      STDERR:
-      {{ kill_result.stderr }}
+    STDERR:
+    {{ kill_result.stderr }}
 
-      Return Code: {{ kill_result.rc }}
-      ============================================
+    Return Code: {{ kill_result.rc }}
+    ============================================
 
-    dest: "{{ stop_services_log }}"
-    append: yes
+    EOF
   when: kill_result is defined
 
 - name: Verify all EBS processes are stopped
@@ -116,20 +114,19 @@
   when: services_stopped
 
 - name: Log verification output
-  copy:
-    content: |
-      ============================================
-      PROCESS VERIFICATION - {{ current_date }}
-      ============================================
-      STDOUT:
-      {{ verify_processes.stdout }}
+  shell: |
+    cat >> {{ stop_services_log }} << 'EOF'
+    ============================================
+    PROCESS VERIFICATION - {{ current_date }}
+    ============================================
+    STDOUT:
+    {{ verify_processes.stdout }}
 
-      STDERR:
-      {{ verify_processes.stderr }}
+    STDERR:
+    {{ verify_processes.stderr }}
 
-      Return Code: {{ verify_processes.rc }}
-      ============================================
+    Return Code: {{ verify_processes.rc }}
+    ============================================
 
-    dest: "{{ stop_services_log }}"
-    append: yes
+    EOF
   when: verify_processes is defined
