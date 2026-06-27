@@ -21,7 +21,7 @@
           | first
         ).secret_name
       }}
-    final_password: "{{ final_password }}"
+    final_password1: "{{ final_password }}"
 
 - name: Update workflow state
   set_fact:
