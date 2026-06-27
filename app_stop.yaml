@@ -1,0 +1,26 @@
+- name: APP Stop
+  hosts: all
+  gather_facts: false
+
+  vars:
+    instance: "{{ instance }}"
+  vars_files:
+    - config/{{ instance }}.yaml
+
+  
+  tasks:
+    - name: Stop services 
+      shell: |
+        . {{ APP_BASE }}/{{ APP_ENV }} run
+        . {{ APP_BASE }}/{{ APP_ENV }} run && echo {{ TGT_WEBLOGIC_PASS }} | $ADMIN_SCRIPTS_HOME/adstpall.sh apps/{{ TGT_APPS_PASS }} 
+      args:
+        executable: /bin/bash
+      register: stop_services_result
+      ignore_errors: yes
+
+    - name: Wait for 2 minutes 
+      pause:
+        minutes: 2
+      when: stop_services_result.rc == 0
+      
+   
