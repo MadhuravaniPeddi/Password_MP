@@ -1,0 +1,15 @@
+---
+- name: Build target groups from --limit
+  set_fact:
+    target_groups: "{{ ansible_limit.split(',') | map('trim') | list }}"
+  when: ansible_limit is defined
+
+- name: Show target groups
+  debug:
+    var: target_groups
+
+- name: Apply password change for each group
+  include_tasks: process_group.yml
+  loop: "{{ target_groups }}"
+  loop_control:
+    loop_var: group_name
