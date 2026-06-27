@@ -2,16 +2,6 @@
   set_fact:
     target_groups: []
 
-# - name: Identify groups containing any of the limited hosts
-#   vars:
-#     all_groups: "{{ groups.keys() | difference(['all']) | list }}"
-#   loop: "{{ all_groups }}"
-#   loop_control:
-#     loop_var: candidate_group
-#   set_fact:
-#     target_groups: "{{ target_groups + [ candidate_group ] }}"
-#   when: "(groups[candidate_group] | intersect(ansible_play_batch) | length) > 0"
-
 - name: Normalize ansible_limit and extract valid groups
   set_fact:
     target_groups: "{{ ansible_limit.split(',') | map('trim') | list }}"
@@ -26,33 +16,21 @@
   debug:
     var: target_groups
 
-- name: "Initialize password_rotation_items list"
+- name: Initialize password_rotation_items list
   set_fact:
     password_rotation_items: []
 
-- name: "Rotate passwords for each target group"
+- name: Rotate passwords for each target group
   include_tasks: rotate_group.yml
   loop: "{{ target_groups }}"
   loop_control:
     loop_var: group_name
   vars:
-    group_users: "{{ hostvars[ groups[group_name][0] ].users | default([]) }}"
+    group_users: "{{ hostvars[groups[group_name][0]].users | default([]) }}"
 
 - name: Debug – final password_rotation_items
   debug:
     var: password_rotation_items
-
-- name: Make password_rotation_items available to later roles
-  set_fact:
-    password_rotation_items: "{{ password_rotation_items }}"
-
-- name: Show credential variables in OLAM - Before Update
-  debug:
-    msg:
-      - "TGT_APPS_PASS={{ TGT_APPS_PASS | default('') }}"
-      - "TGT_SYSTEM_PASS={{ TGT_SYSTEM_PASS | default('') }}"
-      - "TGT_WEBLOGIC_PASS={{ TGT_WEBLOGIC_PASS | default('') }}"
-      - "TGT_APPS_PASS_GEN={{ TGT_APPS_PASS_GEN | default('') }}"
 
 - name: Get existing credential
   uri:
@@ -65,18 +43,28 @@
     return_content: true
   register: credential
   delegate_to: localhost
-  run_once: yes
+  run_once: true
 
-- name: Merge updated credential inputs
+- name: Initialize updated_inputs
+  set_fact:
+    updated_inputs: "{{ credential.json.inputs }}"
+  run_once: true
+
+- name: Merge password values into updated_inputs
   set_fact:
     updated_inputs: >-
       {{
-        credential.json.inputs | combine({
-          'TGT_APPS_PASS': old_password | default(''),
-          'TGT_APPS_PASS_GEN': new_password | default('')
+        updated_inputs | combine({
+          (item.olam_prefix ~ '_TGT_APPS_PASS'): item.retrieved_password,
+          (item.olam_prefix ~ '_TGT_APPS_PASS_GEN'): item.generated_password,
         })
       }}
-  run_once: yes
+  loop: "{{ password_rotation_items }}"
+  run_once: true
+
+- name: Debug updated_inputs
+  debug:
+    var: updated_inputs
 
 - name: Update credential in OLAM
   uri:
@@ -92,5 +80,5 @@
     status_code: 200
   register: update_result
   delegate_to: localhost
-  run_once: yes
+  run_once: true
   ignore_errors: yes
