@@ -4,4 +4,4 @@ APP_BASE: "/u01/app/oracle/EBSTRGT"
 ## OLAM Credential API ##
 OLAM_USER: "admin"
 olam_url: "https://10.10.125.120"
-credential_id: 22
+credential_id: 24
