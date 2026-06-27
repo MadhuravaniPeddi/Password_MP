@@ -7,5 +7,5 @@ pause_duration_minutes: 2
 force_kill_timeout: 9
 
 # Logging configuration - log_dir should be defined in config file
-log_timestamp: "{{ current_date }}"
+log_timestamp: "{{ currentDateTime }}"
 stop_services_log: "{{ log_dir }}/stop_services_{{ log_timestamp }}.log"

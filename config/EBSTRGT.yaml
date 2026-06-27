@@ -3,8 +3,10 @@ APP_BASE: "/u01/app/oracle/EBSTRGT"
 
 ## OLAM Credential API ##
 OLAM_USER: "admin"
+OLAM_PASS: ""  # Add OLAM admin password
 olam_url: "https://10.10.125.120"
 credential_id: 24
 
 log_dir: "/stage/password_rotate/logs"
 current_date: "{{ '%Y-%m-%d' | strftime }}"
+currentDateTime: "{{ lookup('pipe', 'date +%Y-%m-%dT%H:%M:%S') }}"

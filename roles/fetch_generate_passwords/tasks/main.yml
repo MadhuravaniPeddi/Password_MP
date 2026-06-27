@@ -45,3 +45,30 @@
 - name: Make password_rotation_items available to later roles
   set_fact:
     password_rotation_items: "{{ password_rotation_items }}"
+
+- name: Show credential variables in OLAM - Before Update
+  debug:
+    msg:
+      - "TGT_APPS_PASS={{ TGT_APPS_PASS | default('') }}"
+      - "TGT_SYSTEM_PASS={{ TGT_SYSTEM_PASS | default('') }}"
+      - "TGT_WEBLOGIC_PASS={{ TGT_WEBLOGIC_PASS | default('') }}"
+      - "TGT_APPS_PASS_GEN={{ TGT_APPS_PASS_GEN | default('') }}"
+
+- name: Update credential in OLAM
+  uri:
+    url: "{{ olam_url }}/api/v2/credentials/{{ credential_id }}/"
+    method: PATCH
+    user: "{{ OLAM_USER }}"
+    password: "{{ OLAM_PASS }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      inputs:
+        TGT_APPS_PASS: "{{ TGT_APPS_PASS | default('') }}"
+        TGT_SYSTEM_PASS: "{{ TGT_SYSTEM_PASS | default('') }}"
+        TGT_WEBLOGIC_PASS: "{{ TGT_WEBLOGIC_PASS | default('') }}"
+        TGT_APPS_PASS_GEN: "{{ TGT_APPS_PASS_GEN | default('') }}"
+    status_code: 200
+  register: update_result
+  ignore_errors: yes
