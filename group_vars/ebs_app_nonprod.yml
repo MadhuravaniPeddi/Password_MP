@@ -1,4 +1,9 @@
 ---
+Primary: true
+EBS_ENV_FILE: "/u01/app/oracle/EBSTRGT/EBSapps.env"
+DB_SID: "EBSTRGT"
+ebs_owner: "appl1229"
+
 olam_prefix: "EBS"
 olam_fields:
   apps_pass: EBS_TGT_APPS_PASS
