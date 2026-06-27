@@ -1,0 +1,11 @@
+---
+- name: Start AdminServer - {{ fs }} FS
+  shell: |
+    source {{ hostvars[target_host].EBS_ENV_FILE }} {{ fs }}
+    # sed -i.clone "s|deny|allow|g" $EBS_DOMAIN_HOME/config/config.xml
+    cd $ADMIN_SCRIPTS_HOME
+    (echo "{{ weblogic_password }}"; echo "{{ apps_password }}") | adadminsrvctl.sh start {{ FORCE_PATCH }}
+  args:
+    executable: /bin/bash
+  register: adminserver_run_start
+  delegate_to: "{{ target_host }}"
