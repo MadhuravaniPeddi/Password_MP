@@ -43,24 +43,24 @@
     return_content: true
   register: credential
   delegate_to: localhost
-  run_once: true
+  run_once: yes
 
 - name: Initialize updated_inputs
   set_fact:
     updated_inputs: "{{ credential.json.inputs }}"
-  run_once: true
+  run_once: yes
 
-- name: Merge password values into updated_inputs
+- name: Merge updated credential inputs
   set_fact:
     updated_inputs: >-
       {{
         updated_inputs | combine({
-          (item.olam_prefix ~ '_TGT_APPS_PASS'): item.retrieved_password,
-          (item.olam_prefix ~ '_TGT_APPS_PASS_GEN'): item.generated_password,
+          item.olam_fields.apps_pass: item.retrieved_password,
+          item.olam_fields.apps_pass_gen: item.generated_password
         })
       }}
   loop: "{{ password_rotation_items }}"
-  run_once: true
+  run_once: yes
 
 - name: Debug updated_inputs
   debug:
@@ -80,5 +80,5 @@
     status_code: 200
   register: update_result
   delegate_to: localhost
-  run_once: true
+  run_once: yes
   ignore_errors: yes
