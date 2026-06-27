@@ -1,43 +1,17 @@
-# - name: Get limited groups
-#   hosts: all
-#   tasks:
-#     - set_fact:
-#         val: false
-
-#     - name: Attempt to print limited groups
-#       block:
-#         - name: Print limited groups
-#           debug:
-#             msg: "Limited groups are: {{ limited_groups }}"
-#       rescue:
-#         - set_fact:
-#             val: true
-
-#     - name: Print val (to check if rescue triggered)
-#       debug:
-#         msg: "Rescue triggered: {{ val }}"
-
-#     - name: Print group variables
-#       debug:
-#         msg: "{{ hostvars[groups['Cen_NonProd_APP'][0]].user }}"
-    
-#     - name: Print group variables
-#       debug:
-#         msg: "{{ user }}"
 ---
-# roles/password_rotation_role1/tasks/main.yml
-
-- name: Rotate passwords for each OS user
+- name: Print OLAM Creds
   hosts: all
   gather_facts: no
   run_once: true
 
-  roles:
-    - fetch_generate_passwords
-    - rotate_passwords_os
-    - update_secret_server
-    - rollback_os_passwords
-    - send_email_notification
+  vars_files:
+    - config/{{ instance }}.yaml
 
-
-
+  tasks:
+    - name: OLAM Credentials
+      debug:
+    	msg:
+          - "TGT_APPS_PASS={{ TGT_APPS_PASS | default('') }}"
+          - "TGT_SYSTEM_PASS={{ TGT_SYSTEM_PASS | default('') }}"
+          - "TGT_WEBLOGIC_PASS={{ TGT_WEBLOGIC_PASS | default('') }}"
+          - "TGT_APPS_PASS_GEN={{ TGT_APPS_PASS_GEN | default('') }}"
