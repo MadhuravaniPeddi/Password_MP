@@ -72,10 +72,10 @@
     updated_inputs: >-
       {{
         credential.json.inputs | combine({
-          'TGT_APPS_PASS': TGT_APPS_PASS | default(''),
-          'TGT_SYSTEM_PASS': TGT_SYSTEM_PASS | default(''),
-          'TGT_WEBLOGIC_PASS': TGT_WEBLOGIC_PASS | default(''),
-          'TGT_APPS_PASS_GEN': TGT_APPS_PASS_GEN | default('')
+          'TGT_APPS_PASS': old_password | default(''),
+          'TGT_SYSTEM_PASS': system_password | default(''),
+          'TGT_WEBLOGIC_PASS': weblogic_admin_password | default(''),
+          'TGT_APPS_PASS_GEN': new_password | default('')
         })
       }}
   run_once: yes
