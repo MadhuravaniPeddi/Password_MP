@@ -1,4 +1,7 @@
 ---
+- debug:
+    var: final_password1
+    
 - block:
 
     - name: Initialize Secret Server status
