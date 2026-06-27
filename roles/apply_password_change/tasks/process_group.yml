@@ -31,15 +31,10 @@
     - name: Change APPS password using FNDCPASS
       shell: |
         source {{ hostvars[target_host].EBS_ENV_FILE }} run
-
-        FNDCPASS \
-        apps/{{ apps_password }} \
-        0 Y \
-        system/{{ system_password }} \
-        SYSTEM APPLSYS \
-        {{ target_password }}
+        FNDCPASS apps/{{ apps_password }} 0 Y system/{{ system_password }} SYSTEM APPLSYS {{ target_password }}
       args:
         executable: /bin/bash
+        chdir: /tmp
       register: fndcpass_result
       delegate_to: "{{ target_host }}"
       become: yes
