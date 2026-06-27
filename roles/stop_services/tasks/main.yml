@@ -23,12 +23,12 @@
     STOP SERVICES - {{ current_date }}
     ============================================
     STDOUT:
-    {{ stop_services_result.stdout }}
+    {{ stop_services_result.stdout | default('') }}
 
     STDERR:
-    {{ stop_services_result.stderr }}
+    {{ stop_services_result.stderr | default('') }}
 
-    Return Code: {{ stop_services_result.rc }}
+    Return Code: {{ stop_services_result.rc | default(-1) }}
     ============================================
 
     EOF
@@ -67,16 +67,16 @@
     PROCESS CHECK - {{ current_date }}
     ============================================
     STDOUT:
-    {{ process_check.stdout }}
+    {{ process_check.stdout | default('') }}
 
     STDERR:
-    {{ process_check.stderr }}
+    {{ process_check.stderr | default('') }}
 
-    Return Code: {{ process_check.rc }}
+    Return Code: {{ process_check.rc | default(-1) }}
     ============================================
 
     EOF
-  when: process_check is defined
+  when: services_stopped
 
 - name: Kill remaining EBS processes
   shell: |
@@ -94,16 +94,18 @@
     KILL PROCESSES - {{ current_date }}
     ============================================
     STDOUT:
-    {{ kill_result.stdout }}
+    {{ kill_result.stdout | default('') }}
 
     STDERR:
-    {{ kill_result.stderr }}
+    {{ kill_result.stderr | default('') }}
 
-    Return Code: {{ kill_result.rc }}
+    Return Code: {{ kill_result.rc | default(-1) }}
     ============================================
 
     EOF
-  when: kill_result is defined
+  when:
+    - services_stopped
+    - process_check.stdout | trim != ""
 
 - name: Verify all EBS processes are stopped
   shell: |
@@ -120,13 +122,13 @@
     PROCESS VERIFICATION - {{ current_date }}
     ============================================
     STDOUT:
-    {{ verify_processes.stdout }}
+    {{ verify_processes.stdout | default('') }}
 
     STDERR:
-    {{ verify_processes.stderr }}
+    {{ verify_processes.stderr | default('') }}
 
-    Return Code: {{ verify_processes.rc }}
+    Return Code: {{ verify_processes.rc | default(-1) }}
     ============================================
 
     EOF
-  when: verify_processes is defined
+  when: services_stopped
