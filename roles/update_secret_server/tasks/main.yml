@@ -1,40 +1,62 @@
 ---
-- name: Resolve generated password
-  set_fact:
-    final_password: >-
-      {{
-        lookup(
-          'vars',
-          hostvars[rotation_item.target_host].olam_fields.apps_pass_gen
-        )
-      }}
+- block:
 
-- name: Update Secret Server
-  include_role:
-    name: update_password
-  vars:
-    group_name: "{{ rotation_item.group }}"
-    target_host: "{{ rotation_item.target_host }}"
-    secret_name: >-
-      {{
-        (
-          hostvars[rotation_item.target_host].users
-          | selectattr('user', 'equalto', 'APPS')
-          | first
-        ).secret_name
-      }}
-    final_password: "{{ final_password }}"
+    - name: Initialize Secret Server status
+      set_fact:
+        secretserver_success: false
+        error_msg_secret: ""
 
-- name: Update workflow state
-  set_fact:
-    updated_items: >-
-      {{
-        updated_items +
-        [
-          rotation_item |
-          combine({
-            'secretserver_success': secretserver_success,
-            'error_msg_secret': error_msg_secret
-          })
-        ]
-      }}
+    - name: Search Secret
+      uri:
+        url: "{{ secret_server_base_url }}/api/v1/secrets?filter.searchText={{ secret_name }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ tkn }}"
+      register: secret_lookup
+      delegate_to: localhost
+
+    - name: Fail if secret not found
+      fail:
+        msg: "Secret {{ secret_name }} not found."
+      when: secret_lookup.json.records | length == 0
+
+    - name: Store Secret details
+      set_fact:
+        secret_details: "{{ secret_lookup.json.records[0] }}"
+
+    - name: Update Secret Server
+      uri:
+        url: "{{ secret_server_base_url }}/api/v1/secrets/{{ secret_details.id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ tkn }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: "{{ secret_details.id }}"
+          name: "{{ secret_details.name }}"
+          siteId: "{{ secret_details.siteId }}"
+          folderId: "{{ secret_details.folderId }}"
+          items:
+            - fieldId: "{{ secret_details.items[0].fieldId }}"
+              itemId: "{{ secret_details.items[0].itemId }}"
+              itemValue: "{{ final_password }}"
+          active: true
+          comment: "{{ secret_details.comment }}"
+      register: update_response
+      delegate_to: localhost
+      until: update_response.status in [200, 201, 204]
+      retries: 3
+      delay: 5
+      failed_when: update_response.status not in [200, 201, 204]
+
+    - name: Mark Secret Server success
+      set_fact:
+        secretserver_success: true
+
+  rescue:
+
+    - name: Capture Secret Server failure
+      set_fact:
+        secretserver_success: false
+        error_msg_secret: "{{ ansible_failed_result.msg | default('Secret Server update failed') }}"
