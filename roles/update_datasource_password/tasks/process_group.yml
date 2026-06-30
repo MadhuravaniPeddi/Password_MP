@@ -18,10 +18,20 @@
     target_password: >-
       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
 
-    # weblogic_password: >-
-      # {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
-   resolved_weblogic_password: >-
-  {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+    resolved_weblogic_password: >-
+      {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+# - name: Resolve OLAM variable names
+#   set_fact:
+#     apps_password: >-
+#       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass) }}
+
+#     target_password: >-
+#       {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
+
+#     # weblogic_password: >-
+#       # {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+#    resolved_weblogic_password: >-
+#   {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
 
 - block:
 
