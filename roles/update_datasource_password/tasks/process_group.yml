@@ -1,0 +1,164 @@
+---
+#########################################################################
+# Skip groups that failed previous stages
+#########################################################################
+
+- name: Skip group
+  set_fact:
+    updated_items: "{{ updated_items + [rotation_item] }}"
+  when: not (
+          rotation_item.password_success and
+          rotation_item.secretserver_success
+        )
+
+- name: Process eligible groups
+  block:
+
+    #################################################################
+    # Set group name
+    #################################################################
+
+    - set_fact:
+        group_name: "{{ rotation_item.group }}"
+
+    #################################################################
+    # Find Primary Host
+    #################################################################
+
+    - name: Find primary host
+      set_fact:
+        target_host: "{{ item }}"
+      loop: "{{ groups[group_name] }}"
+      when: hostvars[item].primary | default(false) | bool
+
+    - name: Verify primary host found
+      fail:
+        msg: "No primary host found in {{ group_name }}"
+      when: target_host is not defined
+
+    #################################################################
+    # Resolve passwords
+    #################################################################
+
+    - name: Resolve OLAM variable names
+      set_fact:
+        target_password: >-
+          {{ lookup('vars', hostvars[target_host].olam_fields.apps_pass_gen) }}
+
+        resolved_weblogic_password: >-
+          {{ lookup('vars', hostvars[target_host].olam_fields.weblogic_pass) }}
+
+    #################################################################
+    # Start Admin - Run
+    #################################################################
+
+    - name: Start AdminServer - Run FS
+      include_role:
+        name: admin_server_start
+      vars:
+        apps_password: "{{ target_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
+        FORCE_PATCH: ""
+        fs: "run"
+
+    #################################################################
+    # Start Admin - Patch
+    #################################################################
+
+    - name: Start AdminServer - Patch FS
+      include_role:
+        name: admin_server_start
+      vars:
+        apps_password: "{{ target_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
+        FORCE_PATCH: "forcepatchfs"
+        fs: "patch"
+
+    #################################################################
+    # Update datasource
+    #################################################################
+
+    - name: Update APPS password in WLS Data Source
+      expect:
+        timeout: 600
+        chdir: /tmp
+        command: |
+          /bin/bash -c "
+          source {{ hostvars[target_host].EBS_ENV_FILE }} run
+          perl \$FND_TOP/patch/115/bin/txkManageDBConnectionPool.pl
+          "
+        responses:
+          "Enter Your Choice :": "updateDSPassword"
+          "Enter the full path of Applications Context File.*:": ""
+          "Enter weblogic admin server password:": "{{ resolved_weblogic_password }}"
+          "Enter the APPS user password:": "{{ target_password }}"
+      register: ds_update
+      delegate_to: "{{ target_host }}"
+      failed_when: >
+        ds_update.rc != 0 or
+        'ERROR' in ds_update.stdout
+
+    #################################################################
+    # Stop Admin - Run
+    #################################################################
+
+    - name: Stop AdminServer - Run FS
+      include_role:
+        name: admin_server_stop
+      vars:
+        apps_password: "{{ target_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
+        FORCE_PATCH: ""
+        fs: "run"
+
+    #################################################################
+    # Stop Admin - Patch
+    #################################################################
+
+    - name: Stop AdminServer - Patch FS
+      include_role:
+        name: admin_server_stop
+      vars:
+        apps_password: "{{ target_password }}"
+        weblogic_password: "{{ resolved_weblogic_password }}"
+        FORCE_PATCH: "forcepatchfs"
+        fs: "patch"
+
+    #################################################################
+    # Success
+    #################################################################
+
+    - name: Mark datasource success
+      set_fact:
+        datasource_success: true
+        error_message: ""
+
+  rescue:
+
+    - name: Mark datasource failure
+      set_fact:
+        datasource_success: false
+        error_message: "{{ ansible_failed_result.msg | default('Datasource update failed') }}"
+
+  always:
+
+    #################################################################
+    # Update password_rotation_state.json entry
+    #################################################################
+
+    - name: Update rotation state
+      set_fact:
+        updated_items: >-
+          {{
+            updated_items +
+            [
+              rotation_item | combine({
+                'datasource_success': datasource_success,
+                'error_message': error_message
+              })
+            ]
+          }}
+
+  when:
+    - rotation_item.password_success
+    - rotation_item.secretserver_success
