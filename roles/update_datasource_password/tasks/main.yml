@@ -1,19 +1,33 @@
 ---
-- name: Initialize datasource update results
-  set_fact:
-    datasource_update_results: []
+- name: Load password rotation state
+  slurp:
+    src: /tmp/password_rotation_state.json
+  register: state_file
+  delegate_to: localhost
+  run_once: true
 
-- name: Normalize ansible_limit and extract target groups
+- name: Parse password rotation state
   set_fact:
-    target_groups: "{{ ansible_limit.split(',') | map('trim') | list }}"
-  when: ansible_limit is defined
+    rotation_state: "{{ state_file.content | b64decode | from_json }}"
 
-- name: Update datasource password for each group
+- name: Initialize updated items
+  set_fact:
+    updated_items: []
+
+- name: Update datasource password
   include_tasks: process_group.yml
-  loop: "{{ target_groups }}"
+  loop: "{{ rotation_state }}"
   loop_control:
-    loop_var: group_name
+    loop_var: rotation_item
 
-- name: Show datasource update results
+- name: Save updated password rotation state
+  copy:
+    dest: /tmp/password_rotation_state.json
+    content: "{{ updated_items | to_nice_json }}"
+    mode: "0644"
+  delegate_to: localhost
+  run_once: true
+
+- name: Show updated state
   debug:
-    var: datasource_update_results
+    var: updated_items
